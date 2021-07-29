@@ -13,7 +13,6 @@ def parse_args():
         "--config",
         type=str,
         required=True,
-        required=True,
         help="path of configuration file",
     )
     parser.add_argument(
