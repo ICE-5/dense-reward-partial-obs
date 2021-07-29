@@ -1,0 +1,61 @@
+{
+   "children" : [],
+   "configs" : [],
+   "models" : [
+      {
+         "folder" : "../../models/peripherals/PdHand",
+         "name" : "PdHand",
+         "offset" : {
+            "posx" : 546.420,
+            "posy" : 30.480,
+            "posz" : 465.270,
+            "rotx" : -180,
+            "roty" : 0,
+            "rotz" : 0
+         },
+         "path" : "../../models/peripherals/PdHand/PdHand.svf",
+         "unique_name" : "PdHand-0"
+      },
+      {
+         "folder" : "../../models/fingers/PdDefault",
+         "name" : "PdDefault",
+         "offset" : {
+            "posx" : 0,
+            "posy" : 0,
+            "posz" : 110,
+            "rotx" : 0,
+            "roty" : 180,
+            "rotz" : -45
+         },
+         "path" : "../../models/fingers/PdDefault/finger.svf",
+         "unique_name" : "PdDefault-0"
+      },
+      {
+         "folder" : "models/peripherals/insertion_box",
+         "name" : "insertion_box",
+         "offset" : {
+            "posx" : 500,
+            "posy" : 80,
+            "posz" : 150,
+            "rotx" : 90,
+            "roty" : 0,
+            "rotz" : 0
+         },
+         "path" : "models/peripherals/insertion_box/insertion_box.svf",
+         "unique_name" : "insertion_box-0"
+      }
+   ],
+   "viewport" : {
+      "aspectRatio" : 1.741233373639661,
+      "distanceToOrbit" : 2103.012111372555,
+      "eye" : [ 668.6043196175251, 2499.575353040120, 1104.978710415083 ],
+      "fieldOfView" : 22.91830178259510,
+      "isOrthographic" : false,
+      "name" : "",
+      "pivotPoint" : [ 1043.806332368665, 490.1596900319148, 296.7722327075808 ],
+      "projection" : "perspective",
+      "target" : [ 648.1636992356291, 2337.957872017283, 1049.595134154110 ],
+      "up" : [ -0.04038829235006563, -0.3193373757976918, 0.9467800305560365 ],
+      "worldUpVector" : [ 0, 0, 1 ]
+   }
+}

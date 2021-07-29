@@ -1,0 +1,61 @@
+{
+   "children" : [],
+   "configs" : [],
+   "models" : [
+      {
+         "folder" : "models/peripherals/Wide",
+         "name" : "Wide",
+         "offset" : {
+            "posx" : 2425.930,
+            "posy" : 5,
+            "posz" : 1631.770,
+            "rotx" : 0,
+            "roty" : 0,
+            "rotz" : -90
+         },
+         "path" : "models/peripherals/Wide/Wide.svf",
+         "unique_name" : "Wide-0"
+      },
+      {
+         "folder" : "models/fingers/SchunkDual",
+         "name" : "SchunkDual",
+         "offset" : {
+            "posx" : 2395.860,
+            "posy" : -10.90,
+            "posz" : 1417.120,
+            "rotx" : -180,
+            "roty" : 0,
+            "rotz" : -180
+         },
+         "path" : "models/fingers/SchunkDual/SchunkDual.svf",
+         "unique_name" : "SchunkDual-0"
+      },
+      {
+         "folder" : "models/peripherals/task_lap_90deg_2mm",
+         "name" : "task_lap_90deg_2mm",
+         "offset" : {
+            "posx" : 2423.60,
+            "posy" : 5,
+            "posz" : 1352.510,
+            "rotx" : 0,
+            "roty" : 0,
+            "rotz" : -90
+         },
+         "path" : "models/peripherals/task_lap_90deg_2mm/task_lap_90deg_2mm.svf",
+         "unique_name" : "task_lap_90deg_2mm-0"
+      }
+   ],
+   "viewport" : {
+      "aspectRatio" : 1.90632703368940,
+      "distanceToOrbit" : 3485.660980222442,
+      "eye" : [ 3436.450755745518, 1572.684310130512, 1870.233711609054 ],
+      "fieldOfView" : 22.91830278699458,
+      "isOrthographic" : false,
+      "name" : "",
+      "pivotPoint" : [ 21.48923572897911, 0, 236.9247632622719 ],
+      "projection" : "perspective",
+      "target" : [ 3062.528626573206, 1014.954023680812, 1721.183427774505 ],
+      "up" : [ -0.1206724348646365, -0.1799911436442921, 0.9762383682653841 ],
+      "worldUpVector" : [ 0, 0, 1 ]
+   }
+}

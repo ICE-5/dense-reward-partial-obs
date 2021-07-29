@@ -1,0 +1,81 @@
+{
+   "children" : [
+      {
+         "parent_name" : "PandaEmika-0",
+         "unique_name" : "PdHand-0"
+      },
+      {
+         "parent_name" : "PandaEmika-0",
+         "unique_name" : "PdDefault-0"
+      }
+   ],
+   "configs" : [
+      {
+         "Joint 0" : 0.007362004215389157,
+         "Joint 1" : 0.07194271048427030,
+         "Joint 2" : -0.01459026946656738,
+         "Joint 3" : -2.137790100123784,
+         "Joint 4" : 0.1264340737159515,
+         "Joint 5" : 2.227172613900592,
+         "Joint 6" : 0.5154945875526862,
+         "unique_name" : "PandaEmika-0"
+      }
+   ],
+   "models" : [
+      {
+         "folder" : "../../models/robots/Panda Emika",
+         "name" : "PandaEmika",
+         "offset" : {
+            "posx" : 0,
+            "posy" : 0,
+            "posz" : 0,
+            "rotx" : 0,
+            "roty" : 0,
+            "rotz" : 0
+         },
+         "path" : "../../models/robots/Panda Emika/Panda Emika.svf",
+         "unique_name" : "PandaEmika-0"
+      },
+      {
+         "folder" : "../../models/peripherals/PdHand",
+         "name" : "PdHand",
+         "offset" : {
+            "posx" : 0,
+            "posy" : 0,
+            "posz" : -1,
+            "rotx" : 0,
+            "roty" : 0,
+            "rotz" : -45
+         },
+         "path" : "../../models/peripherals/PdHand/PdHand.svf",
+         "unique_name" : "PdHand-0"
+      },
+      {
+         "folder" : "../../models/fingers/PdDefault",
+         "name" : "PdDefault",
+         "offset" : {
+            "posx" : 0,
+            "posy" : 0,
+            "posz" : 110,
+            "rotx" : 0,
+            "roty" : 180,
+            "rotz" : -45
+         },
+         "path" : "../../models/fingers/PdDefault/finger.svf",
+         "unique_name" : "PdDefault-0"
+      }
+   ],
+   "viewport" : {
+      "aspectRatio" : 1.806775407779172,
+      "distanceToOrbit" : 2341.909798684457,
+      "eye" : [ 38.62314315991665, 2772.900126488479, 919.1310545998504 ],
+      "fieldOfView" : 22.91830096700283,
+      "isOrthographic" : false,
+      "name" : "",
+      "pivotPoint" : [ 1043.806332368665, 490.1596900319148, 296.7722327075808 ],
+      "projection" : "perspective",
+      "target" : [ 35.55189769974805, 2604.157572862284, 885.6364624952582 ],
+      "up" : [ -0.003542480249969334, -0.1946334707865815, 0.9808696462238230 ],
+      "worldUpVector" : [ 0, 0, 1 ]
+   }
+}

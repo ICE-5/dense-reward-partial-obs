@@ -1,0 +1,80 @@
+{
+   "children" : [
+      {
+         "parent_name" : "KUKA-KR60-3-0",
+         "unique_name" : "Wide-0"
+      },
+      {
+         "parent_name" : "KUKA-KR60-3-0",
+         "unique_name" : "SchunkDual-0"
+      }
+   ],
+   "configs" : [
+      {
+         "Joint 0" : -2.342980920388983e-09,
+         "Joint 1" : -1.391638130749454,
+         "Joint 2" : 1.697435403659297,
+         "Joint 3" : 1.563134659079135e-08,
+         "Joint 4" : 0.6712457707291419,
+         "Joint 5" : -4.839521494659492e-08,
+         "unique_name" : "KUKA-KR60-3-0"
+      }
+   ],
+   "models" : [
+      {
+         "folder" : "../../models/robots/Kuka KR 60-3",
+         "name" : "KUKA-KR60-3",
+         "offset" : {
+            "posx" : 1000,
+            "posy" : 0,
+            "posz" : 5,
+            "rotx" : 0,
+            "roty" : 0,
+            "rotz" : 0
+         },
+         "path" : "../../models/robots/Kuka KR 60-3/Kuka KR 60-3.svf",
+         "unique_name" : "KUKA-KR60-3-0"
+      },
+      {
+         "folder" : "models/peripherals/Wide",
+         "name" : "Wide",
+         "offset" : {
+            "posx" : 5,
+            "posy" : 5,
+            "posz" : 60,
+            "rotx" : 180,
+            "roty" : 0,
+            "rotz" : 90
+         },
+         "path" : "models/peripherals/Wide/Wide.svf",
+         "unique_name" : "Wide-0"
+      },
+      {
+         "folder" : "models/fingers/SchunkDual",
+         "name" : "SchunkDual",
+         "offset" : {
+            "posx" : 5,
+            "posy" : 0,
+            "posz" : 255,
+            "rotx" : 0,
+            "roty" : 180,
+            "rotz" : 0
+         },
+         "path" : "models/fingers/SchunkDual/SchunkDual.svf",
+         "unique_name" : "SchunkDual-0"
+      }
+   ],
+   "viewport" : {
+      "aspectRatio" : 1.760391198044010,
+      "distanceToOrbit" : 6532.002642699285,
+      "eye" : [ 3587.269934851662, 6473.007328324215, 2357.434358040189 ],
+      "fieldOfView" : 22.91830190965760,
+      "isOrthographic" : false,
+      "name" : "",
+      "pivotPoint" : [ 2538.282312844884, 2.927809106267887e-07, 1205.444389507888 ],
+      "projection" : "perspective",
+      "target" : [ 3418.105131641647, 5997.728701088417, 2225.923857465040 ],
+      "up" : [ -0.08458533206701808, -0.2376475469260829, 0.9676615963440564 ],
+      "worldUpVector" : [ 0, 0, 1 ]
+   }
+}

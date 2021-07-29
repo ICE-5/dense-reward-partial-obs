@@ -1,0 +1,56 @@
+{
+   "fingers" : [
+      {
+         "file" : "models/fingers/RqThin/finger.svf",
+         "img" : "models/fingers/RqThin/finger.png",
+         "name" : "RqThin"
+      },
+      {
+         "file" : "models/fingers/SchunkDual/SchunkDual.svf",
+         "img" : "models/fingers/SchunkDual/SchunkDual.png",
+         "name" : "SchunkDual"
+      }
+   ],
+   "parts" : [
+      {
+         "file" : "models/parts/BlockA/BlockA.svf",
+         "img" : "models/parts/BlockA/BlockA.png",
+         "name" : "BlockA",
+         "scl" : [ 2.540, 2.540, 2.540 ]
+      },
+      {
+         "file" : "models/parts/BlockB/BlockB.svf",
+         "img" : "models/parts/BlockB/BlockB.png",
+         "name" : "BlockB",
+         "scl" : [ 2.540, 2.540, 2.540 ]
+      },
+      {
+         "file" : "models/parts/BlockBase/BlockBase.svf",
+         "img" : "models/parts/BlockBase/BlockBase.png",
+         "name" : "BlockBase",
+         "scl" : [ 2.540, 2.540, 2.540 ]
+      },
+      {
+         "file" : "models/parts/Post/Post.svf",
+         "img" : "models/parts/Post/Post.png",
+         "name" : "Post"
+      }
+   ],
+   "peripherals" : [
+      {
+         "file" : "models/peripherals/shortcam/fixture.svf",
+         "img" : "models/peripherals/shortcam/fixture.svf.png",
+         "name" : "ShortCam"
+      },
+      {
+         "file" : "models/peripherals/longcam/fixture.svf",
+         "img" : "models/peripherals/longcam/fixture.svf.png",
+         "name" : "LongCam"
+      },
+      {
+         "file" : "models/peripherals/Wide/Wide.svf",
+         "img" : "models/peripherals/Wide/Wide.png",
+         "name" : "Wide"
+      }
+   ]
+}

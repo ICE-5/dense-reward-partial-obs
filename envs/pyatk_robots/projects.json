@@ -1,0 +1,15 @@
+{
+   "current" : "Sample",
+   "projects" : [
+      {
+         "folder" : "myprojects/Sample/",
+         "is_project" : true,
+         "name" : "Sample"
+      },
+      {
+         "folder" : "myprojects/FooBar/",
+         "is_project" : true,
+         "name" : "FooBar"
+      }
+   ]
+}
