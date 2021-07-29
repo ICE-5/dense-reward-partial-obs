@@ -4,8 +4,8 @@ Please see the instructions below for running the code. The code have been teste
 
 ### Dependencies
 ```
-opencv
-matplotlib
+tqdm
+PIL
 pytorch
 ```
 
