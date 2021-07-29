@@ -2,7 +2,6 @@ import pathlib
 import argparse
 import yaml
 from datetime import datetime
-from pdb import set_trace as debug
 
 import torch
 import torch.nn as nn
@@ -20,7 +19,7 @@ def parse_args():
     parser.add_argument(
         "--config",
         type=str,
-        default="configs/debug.yaml",
+        required=True,
         help="path of configuration file",
     )
 
@@ -42,8 +41,9 @@ def train(config):
     optimizer = optim.Adam(
         model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"]
     )
-    log_dir = pathlib.Path(__file__).resolve().parent / "logs" / config["experiment_id"]
-    writer = SummaryWriter(log_dir)
+    log_dir = pathlib.Path(__file__).resolve().parent / "logs"
+    log_dir.mkdir(parent=True, exist_ok=True)
+    writer = SummaryWriter(log_dir / config["experiment_id"])
 
     iters, epoch = 0, 0
     while iters < config["num_iters"]:

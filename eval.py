@@ -1,10 +1,6 @@
 import pathlib
 import argparse
-import random
 import yaml
-import numpy as np
-from datetime import datetime
-from pdb import set_trace as debug
 
 import torch
 import torch.nn as nn
@@ -23,7 +19,6 @@ def parse_args():
     parser.add_argument(
         "--config",
         type=str,
-        default="configs/debug.yaml",
         help="path of configuration file",
     )
     parser.add_argument(
@@ -84,20 +79,13 @@ def main(config: dict, rollout: list, model_params_path: pathlib.Path) -> tuple:
         obs = step.obs
         if device.type == "cuda":
             obs = to_cuda(obs)
-        dense_reward, debug = predict_reward(
+        dense_reward, _ = predict_reward(
             model, obs=obs, start_obs=start_obs, goal_obs=goal_obs
         )
         dist_reward = step.dist_reward
 
         dense_rewards.append(dense_reward)
         dist_rewards.append(dist_reward)
-
-        # # debug
-        # if i == 3:
-        #     print(f"z_start {debug[0]}")
-        #     print(f"z_goal {debug[1]}")
-        #     print(f"obs_start {debug[2]}")
-        #     print(f"obs_goal {debug[3]}")
 
     return dense_rewards, dist_rewards
 

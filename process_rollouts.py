@@ -13,7 +13,7 @@ def parse_args():
     parser.add_argument(
         "--config",
         type=str,
-        default="configs/debug.yaml",
+        required=True,
         help="path of configuration file",
     )
     parser.add_argument(
