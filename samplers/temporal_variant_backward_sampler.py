@@ -102,10 +102,7 @@ class TemporalVariantBackwardSampler:
                         # IMPORTANT: create ft window for each sample
                         t = prev_timestep
                         action_sum = expert.action * 0.0
-                        ftw = FTWindow(
-                            initial_value=prev_expert.obs["ft"] * 0.0,
-                            left_append=self.config["left_append"],
-                        )
+                        ftw = FTWindow(initial_value=prev_expert.obs["ft"] * 0.0,)
 
                         for i in range(self.control_rate):
                             t += 1
@@ -145,7 +142,7 @@ class TemporalVariantBackwardSampler:
                             action_sum += action
                             ft, _, _, info = self.env.step(action)
                             ftw.insert(ft, i)
-                        
+
                         if "ft" in self.config["sensor_used"]:
                             ft_layer[sample_name] = ftw.window
 

@@ -17,9 +17,7 @@ from process_rollouts import process_rollouts
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config",
-        type=str,
-        help="path of configuration file",
+        "--config", type=str, required=True, help="path of configuration file",
     )
     parser.add_argument(
         "--rollouts",
@@ -28,7 +26,10 @@ def parse_args():
         help="raw rollouts .pkl file from RD2 project",
     )
     parser.add_argument(
-        "--model-params-path", type=str, help="path of model parameter .pt file",
+        "--model-params-path",
+        type=str,
+        required=True,
+        help="path of model parameter .pt file",
     )
 
     args = parser.parse_args()
@@ -45,17 +46,13 @@ def predict_reward(
         z_start, _ = model(start_obs)
         z_goal, _ = model(goal_obs)
 
-        
-
         z_obs = torch.squeeze(z_obs)
         z_start = torch.squeeze(z_start)
         z_goal = torch.squeeze(z_goal)
 
-
         dist_s_g = 1.0 - torch.dot(z_goal, z_start)
         dist_pred_g = 1.0 - torch.dot(z_goal, z_obs)
         reward = 1.0 - dist_pred_g / dist_s_g
-
 
     return reward, (z_start, z_goal, start_obs, goal_obs)
 

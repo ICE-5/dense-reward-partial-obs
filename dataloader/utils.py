@@ -54,27 +54,20 @@ class Sample:
 
 
 class FTWindow:
-    def __init__(self, initial_value: np.ndarray, left_append: bool = True,) -> None:
+    def __init__(self, initial_value: np.ndarray) -> None:
         self.window = initial_value
-        self.left_append = left_append
 
     def update(self, new_ft: np.ndarray or list) -> None:
         try:
-            if self.left_append:
-                self.window[1:, :] = self.window[:-1, :]
-                self.window[0, :] = new_ft
-            else:
-                self.window[:-1, :] = self.window[1:, :]
-                self.window[-1, :] = new_ft
+            self.window[1:, :] = self.window[:-1, :]
+            self.window[0, :] = new_ft
+
         except ValueError:
             print("invalid update, check dimension of new_ft")
 
     def insert(self, new_ft: np.ndarray or list, index: int) -> None:
         try:
-            if self.left_append:
-                self.window[index, :] = new_ft
-            else:
-                self.window[-1 - index, :] = new_ft
+            self.window[index, :] = new_ft
 
         except IndexError:
             print("invalid index for insertion")
@@ -101,15 +94,24 @@ def get_sample_by_code(config: dict, sample_code: str) -> np.ndarray:
         ) as f:
             tmp = pickle.load(f)
 
+        t = tmp[sample.sample_name]
+
         if sensor == "ft":
-            sample.obs[sensor] = torch.Tensor(tmp[sample.sample_name].T).double()
+            t = t.T
+            if config["left_append"]:
+                sample.obs[sensor] = torch.Tensor(t).double()
+            else:
+                sample.obs[sensor] = torch.flip(torch.Tensor(t), dims=[1,]).double()
         elif "map" in sensor:
-            sample.obs[sensor] = torch.Tensor(np.expand_dims(tmp[sample.sample_name], axis=2).transpose((2,0,1))).double()
+            t = np.expand_dims(t, axis=2)
+            t = t.transpose((2, 0, 1))
+            sample.obs[sensor] = torch.Tensor(t).double()
         elif "img" in sensor:
-            sample.obs[sensor] = torch.Tensor(tmp[sample.sample_name].transpose((2,0,1))).double()
+            t = t.transpose((2, 0, 1))
+            sample.obs[sensor] = torch.Tensor(t).double()
         else:
-            sample.obs[sensor] = torch.Tensor(tmp[sample.sample_name]).double()
-    
+            sample.obs[sensor] = torch.Tensor(t).double()
+
     # add depth into obs for computing comparison loss
     assert sample.depth is not None
     sample.obs["depth"] = sample.depth

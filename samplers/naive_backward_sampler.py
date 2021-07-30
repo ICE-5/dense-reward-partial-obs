@@ -84,10 +84,7 @@ class NaiveBackwardSampler:
 
                         self.env.reset([pos, orn])
 
-                        ftw = FTWindow(
-                                    initial_value=prev_expert.obs["ft"] * 0.0,
-                                    left_append=self.config["left_append"],
-                                )
+                        ftw = FTWindow(initial_value=prev_expert.obs["ft"] * 0.0,)
                         for i in range(self.control_rate):
                             action = self.env.action_space.sample()
                             ft, _, _, info = self.env.step(action)

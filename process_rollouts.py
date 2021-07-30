@@ -73,7 +73,6 @@ def process_rollouts(
 
         ftw = FTWindow(
             initial_value=np.zeros([config["ft_window_size"], 6]),
-            left_append=config["left_append"],
         )
         for i, step in enumerate(rollout):
             # make sure the step contains info
