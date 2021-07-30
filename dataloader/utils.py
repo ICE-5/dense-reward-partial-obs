@@ -120,10 +120,10 @@ def process_raw_sample_obs(config: dict, raw_obs: dict, unsqueeze: bool=False) -
         
         processed_obs[sensor] = torch.Tensor(t).double()
 
-        if unsqueeze:
-            return {k: torch.unsqueeze(v, dim=0) for (k, v) in processed_obs.items()}
-        else:
-            return processed_obs
+    if unsqueeze:
+        return {k: torch.unsqueeze(v, dim=0) for (k, v) in processed_obs.items()}
+    else:
+        return processed_obs
 
 
 def parse_depth(sample_code: str) -> int:
