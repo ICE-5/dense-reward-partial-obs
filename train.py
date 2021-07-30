@@ -42,7 +42,7 @@ def train(config):
         model.parameters(), lr=config["lr"], weight_decay=config["weight_decay"]
     )
     log_dir = pathlib.Path(__file__).resolve().parent / "logs"
-    log_dir.mkdir(parent=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
     writer = SummaryWriter(log_dir / config["experiment_id"])
 
     iters, epoch = 0, 0
