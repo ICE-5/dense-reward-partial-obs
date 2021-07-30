@@ -10,6 +10,7 @@ configs/*
 !configs/debug.yaml
 data/
 debug/
+media/
 
 # unsync test scripts
 test_env.py

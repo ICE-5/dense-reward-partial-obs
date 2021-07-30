@@ -38,20 +38,6 @@ class Sample:
         # TODO: add safety & sanity check
         self.rollout_name, self.depth_name, self.sample_name = sample_code.split(".")
 
-    @property
-    def rollout(self) -> int or None:
-        try:
-            return float(self.rollout_name[1:])
-        except Exception:
-            return None
-
-    @property
-    def depth(self) -> float or None:
-        try:
-            return float(self.depth_name[1:])
-        except Exception:
-            return None
-
 
 class FTWindow:
     def __init__(self, initial_value: np.ndarray) -> None:
@@ -75,49 +61,78 @@ class FTWindow:
             print("invalid update, check dimension of new_ft")
 
 
-def get_sample_by_code(config: dict, sample_code: str) -> np.ndarray:
-    sample = Sample()
-    sample.sample_code = sample_code
+# TODO: refactor
+def get_obs_by_code(config: dict, sample_code: str) -> dict:
+    """Retrieve processed observation by sample code
 
-    assert sample.rollout_name is not None
-    assert sample.depth_name is not None
-    assert sample.sample_name is not None
+    Args:
+        config (dict): configuration
+        sample_code (str): identifier string for each sample, e.g. R000.D001.expert (rollout #0, depth #1, expert sample)
+
+    Returns:
+        dict: processed observation, key being name of used sensors, also including depth
+    """    
+    rollout_name, depth_name, sample_name = sample_code.split(".")
+    depth = parse_depth(sample_code)
 
     data_dir = pathlib.Path(config["data_dir"])
     env_name = config["env_name"]
     samples_dir = data_dir / env_name / "samples"
 
+    raw_obs = {}
     for sensor in config["sensor_used"]:
         with open(
-            samples_dir / sample.rollout_name / sample.depth_name / f"{sensor}.pkl",
-            "rb",
+            samples_dir / rollout_name / depth_name / f"{sensor}.pkl", "rb",
         ) as f:
-            tmp = pickle.load(f)
+            raw_obs[sensor] = pickle.load(f)[sample_name]
 
-        t = tmp[sample.sample_name]
+        obs = process_raw_sample_obs(config, raw_obs)
+        obs["depth"] = float(depth)
 
-        if sensor == "ft":
+    return obs
+
+
+def process_raw_sample_obs(config: dict, raw_obs: dict, unsqueeze: bool=False) -> dict:
+    """Process raw observations from backward sampling for torch pipeline
+
+    Args:
+        config (dict): configuration
+        raw_obs (dict): observation from backward sampling
+
+    Returns:
+        dict: processed observation ready for torch pipeline
+    """    
+    processed_obs = {}
+    for sensor in config["sensor_used"]:
+        t = raw_obs[sensor]
+
+        if "ft" in sensor:
             t = t.T
-            if config["left_append"]:
-                sample.obs[sensor] = torch.Tensor(t).double()
-            else:
-                sample.obs[sensor] = torch.flip(torch.Tensor(t), dims=[1,]).double()
+            if not config["left_append"]:
+                t = np.flip(t, axis=1).copy()
         elif "map" in sensor:
             t = np.expand_dims(t, axis=2)
             t = t.transpose((2, 0, 1))
-            sample.obs[sensor] = torch.Tensor(t).double()
         elif "img" in sensor:
             t = t.transpose((2, 0, 1))
-            sample.obs[sensor] = torch.Tensor(t).double()
         else:
-            sample.obs[sensor] = torch.Tensor(t).double()
+            pass
+        
+        processed_obs[sensor] = torch.Tensor(t).double()
 
-    # add depth into obs for computing comparison loss
-    assert sample.depth is not None
-    sample.obs["depth"] = sample.depth
-
-    return sample.obs
+        if unsqueeze:
+            return {k: torch.unsqueeze(v, dim=0) for (k, v) in processed_obs.items()}
+        else:
+            return processed_obs
 
 
 def parse_depth(sample_code: str) -> int:
     return int(sample_code.split(".")[1][1:])
+
+
+def to_cuda(data_dict: dict):
+  if data_dict is None:
+    return None
+  return {k: v.cuda() for (k, v) in data_dict.items()}  
+
+

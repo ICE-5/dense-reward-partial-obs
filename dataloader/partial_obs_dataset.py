@@ -9,7 +9,7 @@ import pathlib
 
 
 from torch.utils.data import Dataset, DataLoader
-from dataloader.utils import get_sample_by_code, parse_depth
+from dataloader.utils import get_obs_by_code, parse_depth
 
 
 class PatialObsDataset(Dataset):
@@ -39,9 +39,9 @@ class PatialObsDataset(Dataset):
         goal_code = f"{rollout_name}.D000.expert"
 
         return {
-            "a_obs": get_sample_by_code(self.config, a_code),
-            "b_obs": get_sample_by_code(self.config, b_code),
-            "goal_obs": get_sample_by_code(self.config, goal_code),
+            "a_obs": get_obs_by_code(self.config, a_code),
+            "b_obs": get_obs_by_code(self.config, b_code),
+            "goal_obs": get_obs_by_code(self.config, goal_code),
         }
 
     def _generate_sample_from_a(self, a_code: str) -> str:

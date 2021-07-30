@@ -82,12 +82,11 @@ def process_rollouts(
                 ftw.update(step[0])
             ftw.update(step[2])
 
-            # add ft sensor observation
             obs = {}
-            obs["ft"] = copy.deepcopy(ftw.window)
-            # add other sensor observation
             for sensor in config["sensor_used"]:
-                if sensor != "ft":
+                if sensor == "ft":
+                    obs["ft"] = copy.deepcopy(ftw.window)
+                else:
                     obs[sensor] = step[5][sensor]
 
 
@@ -112,7 +111,7 @@ def process_rollouts(
             env_name = config["env_name"]
             data_dir = pathlib.Path(config["data_dir"])
             save_dir = data_dir / env_name
-            # save_dir.mkdir(parents=True, exist_ok=True)
+            save_dir.mkdir(parents=True, exist_ok=True)
         else:
             save_dir = pathlib.Path(save_dir)
 
