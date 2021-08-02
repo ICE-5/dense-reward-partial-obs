@@ -17,12 +17,20 @@ class DenseRewardPartialObs:
     """A wrapper class for external reward calculation
     """
 
-    def __init__(self, config: dict, model_id: str, model_params: str = None):
+    def __init__(self, config: dict, model_id: str = "debug", model_params: str = None):
         # self.model_id = datetime.now().strftime("%m%d%Y-%H%M%S")
         self.model_id = model_id
         self.config = config
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = PartialObsAutoEncoder(config).double().to(self.device)
+
+        # try and parse model ID from model params path
+        try:
+            tmp_model_id = model_params.split("/")[-2]
+            if "-" in tmp_model_id:
+                self.model_id = tmp_model_id
+        except Exception:
+            print("please try to provide a model id for distinguising logging and plotting")
 
         if model_params is not None:
             ckpt = torch.load(model_params)

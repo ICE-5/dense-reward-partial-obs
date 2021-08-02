@@ -15,22 +15,10 @@ def parse_args():
         "--config", type=str, required=True, help="path of configuration file",
     )
     parser.add_argument(
-        "--raw-expert-rollouts-pkl",
+        "--raw-expert-rollouts",
         type=str,
         default="data/lap-joint/expert_raw.pkl",
         help="path of raw rollouts .pkl file generated from RD2 project",
-    )
-    parser.add_argument(
-        "--raw-expert-rollouts-csv",
-        type=str,
-        default="data/lap-joint/expert_raw.csv",
-        help="path of .csv file specifying indices of successful rollouts in .pkl file",
-    )
-    parser.add_argument(
-        "--model-id",
-        type=str,
-        required=True,
-        help="model ID for correct logging and plotting",
     )
     parser.add_argument(
         "--model-params",
