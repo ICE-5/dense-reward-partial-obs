@@ -9,20 +9,20 @@ ft_window_size: 8                                     # number of frame to conca
 left_append: True                                     # if true, left in right out, else, right in left out
 
 # sampler
-sampler: "NaiveBackwardSampler"                     # NaiveBackwardSampler / TemporalVariantBackwardSampler
-# sampler: "TemporalVariantBackwardSampler"             
-num_expert_rollouts: 1                                # set to any large number (e.g.) to use all rollouts
+# sampler: "NaiveBackwardSampler"                     # NaiveBackwardSampler / TemporalVariantBackwardSampler
+sampler: "TemporalVariantBackwardSampler"             
+num_expert_rollouts: 2                                # set to any large number (e.g.) to use all rollouts
 num_seeds: 1                                          # <SET TO 1> number of seed to use for generating samples at each depth
 num_samples: 2                                        # number of samples to generate at each depth
 control_rate: 100                                     # interval (in terms of timesteps) to create a depth
 stop_sampling_threshold: 0.5                          # [NAIVE BACKWARD SAMPLER ONLY] threshold to control the end of sampling
-train_test_split: 1.0
+train_test_split: 0.5
 
 # specific to temporal variant sampler
 use_history: False
-control_angle_goal: 175
-control_angle_start: 165
-control_angle_mid: 105
+control_angle_goal: 150
+control_angle_start: 135
+control_angle_mid: 95
 
 # network config
 ft_z_dim: 64

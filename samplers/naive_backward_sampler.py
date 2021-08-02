@@ -57,7 +57,7 @@ class NaiveBackwardSampler:
             timesteps = range(0, len(rollout), self.control_rate)
 
             for depth, timestep in enumerate(
-                tqdm(timesteps, "Dataset generation progress: ")
+                tqdm(timesteps, f"Expert rollout #{rollout_idx} sampling progress: ")
             ):
                 depth_name = f"D{depth:03d}"
                 depth_path = pathlib.Path(self.output_dir) / rollout_name / depth_name

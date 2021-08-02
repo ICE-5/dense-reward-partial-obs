@@ -3,6 +3,7 @@ import pathlib
 import pickle
 import random
 import gym
+import copy
 
 from tqdm import tqdm
 
@@ -71,7 +72,7 @@ class TemporalVariantBackwardSampler:
             rollout_length = len(rollout)
 
             for depth, timestep in enumerate(
-                tqdm(timesteps, "Dataset generation progress: ")
+                tqdm(timesteps, f"Expert rollout #{rollout_idx} sampling progress: ")
             ):
                 depth_name = f"D{depth:03d}"
                 depth_path = pathlib.Path(self.output_dir) / rollout_name / depth_name

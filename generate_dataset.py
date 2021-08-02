@@ -34,6 +34,8 @@ def generate_dataset(config, split_only: bool = False) -> None:
     expert_demo_path = data_dir / env_name / "expert.pkl"
     output_dir = data_dir / env_name / "samples"
 
+    print(f"\nUsing sampler: {config['sampler']}\n")
+
     # sample and split
     if split_only:
         sampler = eval(config["sampler"])(

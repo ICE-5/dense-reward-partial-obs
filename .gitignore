@@ -11,6 +11,7 @@ configs/*
 data/
 debug/
 media/
+plots/
 
 # unsync test scripts
 test_env.py

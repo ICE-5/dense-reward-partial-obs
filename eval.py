@@ -1,14 +1,12 @@
-import pathlib
 import argparse
 import yaml
 
-import torch
-import torch.nn as nn
+import numpy as np
 
-from models.model import PartialObsAutoEncoder
 from process_rollouts import process_rollouts
-from dataloader.utils import *
 from utils import *
+
+from dense_reward_partial_obs import DenseRewardPartialObs
 
 
 def parse_args():
@@ -29,6 +27,12 @@ def parse_args():
         help="path of .csv file specifying indices of successful rollouts in .pkl file",
     )
     parser.add_argument(
+        "--model-id",
+        type=str,
+        required=True,
+        help="model ID for correct logging and plotting",
+    )
+    parser.add_argument(
         "--model-params",
         type=str,
         required=True,
@@ -39,67 +43,28 @@ def parse_args():
     return args
 
 
-def predict_reward(
-    model: nn.Module, obs: dict, start_obs: dict, goal_obs: dict
-) -> float:
-    model.eval()
+def eval_rollout(args, expert_rollout, rollout) -> tuple:
+    with open(args.config) as f:
+        config = yaml.safe_load(f)
 
-    with torch.no_grad():
-        z_obs, _ = model(obs)
-        z_start, _ = model(start_obs)
-        z_goal, _ = model(goal_obs)
+    drpo = DenseRewardPartialObs(
+        config=config, model_id=args.model_id, model_params=args.model_params
+    )
+    drpo.set_expert_demo(expert_rollout=expert_rollout)
 
-        z_obs = torch.squeeze(z_obs)
-        z_start = torch.squeeze(z_start)
-        z_goal = torch.squeeze(z_goal)
+    dense_rewards, dist_rewards = [], []
 
-        dist_s_g = 1.0 - torch.dot(z_goal, z_start)
-        dist_pred_g = 1.0 - torch.dot(z_goal, z_obs)
-        reward = 1.0 - dist_pred_g / dist_s_g
-
-    return reward, (z_start, z_goal, start_obs, goal_obs)
-
-
-def main(
-    config: dict, rollout: list, successful_rollout: list, model_params: pathlib.Path
-) -> tuple:
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = PartialObsAutoEncoder(config).double().to(device)
-    ckpt = torch.load(model_params)
-    model.load_state_dict(ckpt["model_state_dict"])
-
-    # start_obs = rollout[config["ft_window_size"] - 1].obs
-    start_raw_obs = successful_rollout[0].obs
-    goal_raw_obs = successful_rollout[-1].obs
-
-    # process obs
-    start_obs = process_raw_sample_obs(config, start_raw_obs, unsqueeze=True)
-    goal_obs = process_raw_sample_obs(config, goal_raw_obs, unsqueeze=True)
-
-    if device.type == "cuda":
-        start_obs, goal_obs = to_cuda(start_obs), to_cuda(goal_obs)
-
-    dense_rewards = []
-    dist_rewards = []
     for step, sample in enumerate(rollout):
         raw_obs = sample.obs
-        obs = process_raw_sample_obs(config, raw_obs, unsqueeze=True)
-        if device.type == "cuda":
-            obs = to_cuda(obs)
-
-        dense_reward, _ = predict_reward(
-            model, obs=obs, start_obs=start_obs, goal_obs=goal_obs
-        )
+        dense_reward = drpo.predict_reward(raw_obs)
         dist_reward = sample.dist_reward
-
         dense_rewards.append(dense_reward)
         dist_rewards.append(dist_reward)
 
-        if step % 50 == 0 or step == len(rollout) - 1:
+        if step % 50 == 0:
             print(
-                f"step:{step:05d},\tdistance reward: {dist_reward:.05f},\tdense reward: {dense_reward:.05f}"
+                f"step: {step:5d},\tdistance reward: {dist_reward:5f},\tdense reward: {dense_reward:5f}"
             )
-    print("\n")
 
     return dense_rewards, dist_rewards
 
@@ -111,46 +76,28 @@ if __name__ == "__main__":
 
     rollouts = process_rollouts(
         config=config,
-        raw_expert_rollouts_pkl=pathlib.Path(args.raw_expert_rollouts_pkl),
+        raw_expert_rollouts_pkl=args.raw_expert_rollouts_pkl,
         raw_expert_rollouts_csv=None,
         save=False,
         sort_by_length=True,
     )
 
-    successful_rollouts = process_rollouts(
-        config=config,
-        raw_expert_rollouts_pkl=pathlib.Path(args.raw_expert_rollouts_pkl),
-        raw_expert_rollouts_csv=pathlib.Path(args.raw_expert_rollouts_csv),
-        save=False,
-        sort_by_length=True,
-    )
-    
-    successful_rollout = successful_rollouts[0]
+    expert_rollout = rollouts[0]
+    eval_succ_rollout = rollouts[1]
+    eval_fail_rollout = rollouts[-1]
 
-    # test successful rollout
-    a_rollout = successful_rollouts[1]
-    a_dense_rewards, a_dist_rewards = main(
-        config=config, rollout=a_rollout, successful_rollout=successful_rollout, model_params=args.model_params
-    )
+    for i, rollout in enumerate([eval_succ_rollout, eval_fail_rollout]):
+        dense_rewards, dist_rewards = eval_rollout(args, expert_rollout, rollout)
+        x = np.arange(len(rollout))
+        ys = {}
+        ys["dense reward"] = dense_rewards
+        if i == 0:
+            name = "succ"
+            ys["distance reward"] = dist_rewards
+        else:
+            name = "fail"
 
-    # test failed rollout
-    b_rollout = rollouts[-1]
-    b_dense_rewards, b_dist_rewards = main(
-        config=config, rollout=b_rollout, successful_rollout=successful_rollout, model_params=args.model_params
-    )
-
-    experiment_id = args.model_params.split("/")[-2]
-    plot_curves(
-        x=np.arange(len(a_rollout)),
-        ys={"dense rewared": a_dense_rewards,},
-        save_dir="media/",
-        save_name=f"eval_succ_{experiment_id}",
-    )
-
-    plot_curves(
-        x=np.arange(len(b_rollout)),
-        ys={"dense rewared": b_dense_rewards, "dist reward": b_dist_rewards},
-        save_dir="media/",
-        save_name=f"eval_fail_{experiment_id}",
-    )
+        plot_curves(
+            x=x, ys=ys, save_dir="media/", save_name=f"eval_{args.model_id}_{name}",
+        )
 

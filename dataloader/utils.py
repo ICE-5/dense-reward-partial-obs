@@ -86,8 +86,8 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
         ) as f:
             raw_obs[sensor] = pickle.load(f)[sample_name]
 
-        obs = process_raw_sample_obs(config, raw_obs)
-        obs["depth"] = float(depth)
+    obs = process_raw_sample_obs(config, raw_obs)
+    obs["depth"] = float(depth)
 
     return obs
 
