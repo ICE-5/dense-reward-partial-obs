@@ -144,7 +144,7 @@ class TemporalVariantBackwardSampler:
                             ftw.insert(ft, i)
 
                         if "ft" in self.config["sensor_used"]:
-                            ft_layer[sample_name] = ftw.window
+                            ft_layer[sample_name] = copy.deepcopy(ftw.window)
 
                         self.sample_codes.append(
                             f"{rollout_name}.{depth_name}.{sample_name}"

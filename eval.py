@@ -142,7 +142,7 @@ if __name__ == "__main__":
     experiment_id = args.model_params.split("/")[-2]
     plot_curves(
         x=np.arange(len(a_rollout)),
-        ys={"dense rewared": a_dense_rewards, "dist reward": a_dist_rewards},
+        ys={"dense rewared": a_dense_rewards,},
         save_dir="media/",
         save_name=f"eval_succ_{experiment_id}",
     )
