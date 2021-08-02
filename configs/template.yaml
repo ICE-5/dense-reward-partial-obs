@@ -48,3 +48,6 @@ outside_threshold: 0.04
 reconstruction_lambda: 0.2
 comparison_lambda: 10.0
 
+# GPU
+use_gpu: False
+

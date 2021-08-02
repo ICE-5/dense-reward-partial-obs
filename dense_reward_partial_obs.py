@@ -14,14 +14,19 @@ from utils import *
 
 
 class DenseRewardPartialObs:
-    """A wrapper class for external reward calculation
+    """
+    A wrapper class for external learning and inference
     """
 
-    def __init__(self, config: dict, model_id: str = "debug", model_params: str = None) -> None:
+    def __init__(
+        self, config: dict, model_id: str = "debug", model_params: str = None
+    ) -> None:
         # self.model_id = datetime.now().strftime("%m%d%Y-%H%M%S")
         self.model_id = model_id
         self.config = config
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            "cuda:0" if (torch.cuda.is_available() and config["use_gpu"]) else "cpu"
+        )
         self.model = PartialObsAutoEncoder(config).double().to(self.device)
 
         # try and parse model ID from model params path
@@ -30,7 +35,9 @@ class DenseRewardPartialObs:
             if "-" in tmp_model_id:
                 self.model_id = tmp_model_id
         except Exception:
-            print("please try to provide a model id for distinguising logging and plotting")
+            print(
+                "please try to provide a model id for distinguising logging and plotting"
+            )
 
         if model_params is not None:
             ckpt = torch.load(model_params)
@@ -183,9 +190,15 @@ class DenseRewardPartialObs:
     def set_expert_demo(self, expert_rollout: list,) -> None:
         start_raw_obs = expert_rollout[0].obs
         goal_raw_obs = expert_rollout[-1].obs
+
+        
         # process obs
         start_obs = process_raw_sample_obs(self.config, start_raw_obs, unsqueeze=True)
         goal_obs = process_raw_sample_obs(self.config, goal_raw_obs, unsqueeze=True)
+
+        if self.device.type == "cuda":
+            start_obs = to_cuda(start_obs)
+            goal_obs = to_cuda(goal_obs)
 
         self.model.eval()
         with torch.no_grad():
@@ -203,10 +216,10 @@ class DenseRewardPartialObs:
         with torch.no_grad():
             z_obs, _ = self.model(obs)
             z_obs = torch.squeeze(z_obs)
-            
+
             dist_s_g = 1.0 - torch.dot(self.z_goal, self.z_start)
             dist_pred_g = 1.0 - torch.dot(self.z_goal, z_obs)
             reward = 1.0 - dist_pred_g / dist_s_g
 
-        return reward
+        return reward.item()
 
