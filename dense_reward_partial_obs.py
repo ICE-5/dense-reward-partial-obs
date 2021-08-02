@@ -17,7 +17,7 @@ class DenseRewardPartialObs:
     """A wrapper class for external reward calculation
     """
 
-    def __init__(self, config: dict, model_id: str = "debug", model_params: str = None):
+    def __init__(self, config: dict, model_id: str = "debug", model_params: str = None) -> None:
         # self.model_id = datetime.now().strftime("%m%d%Y-%H%M%S")
         self.model_id = model_id
         self.config = config
@@ -36,7 +36,7 @@ class DenseRewardPartialObs:
             ckpt = torch.load(model_params)
             self.model.load_state_dict(ckpt["model_state_dict"])
 
-    def train(self,):
+    def train(self,) -> None:
         # init logging service
         self.model_log_path = pathlib.Path("logs") / self.model_id
         self.model_log_path.mkdir(parents=True, exist_ok=True)
@@ -173,7 +173,7 @@ class DenseRewardPartialObs:
                             "optimizer_state_dict": optimizer.state_dict(),
                             "loss": loss,
                         },
-                        self.save_dir / f"{iters:8d}.pt",
+                        self.save_dir / f"{iters}.pt",
                     )
 
                 if iters > self.config["num_iters"]:

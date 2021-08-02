@@ -55,7 +55,7 @@ def process_rollouts(
     sort_by_length: bool = True,
 ) -> None:
 
-    successful_rollouts = []
+    processed_rollouts = []
 
     with open(raw_expert_rollouts_pkl, "rb") as reader:
         raw_rollouts = pickle.load(reader)
@@ -101,10 +101,10 @@ def process_rollouts(
                 dist_reward=step[3],
             )
             reformatted_rollout.append(sample)
-        successful_rollouts.append(reformatted_rollout)
+        processed_rollouts.append(reformatted_rollout)
 
     if sort_by_length:
-        successful_rollouts.sort(key=len)
+        processed_rollouts.sort(key=len)
 
     if save:
         if save_dir is None:
@@ -113,11 +113,12 @@ def process_rollouts(
             save_dir = data_dir / env_name
             save_dir.mkdir(parents=True, exist_ok=True)
         else:
-            save_dir = pathlib.Path(save_dir)
+            save_dir = pathlib.Path(save_dir)  
 
-        pickle.dump(successful_rollouts, open(save_dir / save_name, "wb"))
+        pickle.dump(processed_rollouts, open(save_dir / save_name, "wb"))
+        pickle.dump(processed_rollouts[0], open(save_dir / "best_expert_rollout.pkl", "wb"))
 
-    return successful_rollouts
+    return processed_rollouts
 
 
 if __name__ == "__main__":
@@ -137,4 +138,7 @@ if __name__ == "__main__":
     # sanity check: length of successful rollouts
     print([len(x) for x in rollouts])
     print([x[-1].dist_reward for x in rollouts])
+
+    
+    
 
