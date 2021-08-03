@@ -160,12 +160,14 @@ class DenseRewardPartialObs:
                             test_cmp_losses.append(test_cmp_loss.item())
 
                     csv_writer.writerow(
-                        loss.item(),
-                        recon_loss.item(),
-                        cmp_loss.item(),
-                        np.mean(test_losses),
-                        np.mean(test_recon_losses),
-                        np.mean(test_cmp_losses),
+                        [
+                            loss.item(),
+                            recon_loss.item(),
+                            cmp_loss.item(),
+                            np.mean(test_losses),
+                            np.mean(test_recon_losses),
+                            np.mean(test_cmp_losses),
+                        ]
                     )
 
                 # perform update
