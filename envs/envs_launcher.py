@@ -46,8 +46,9 @@ if t == 'sim':
 
         return environment
 
-from envs.pyatk_env import ATKEnv
+
 if t == 'pyatk':
+    from envs.pyatk_env import ATKEnv
     def env_creator(env_config):
 
         # initial pose for lap-joint
