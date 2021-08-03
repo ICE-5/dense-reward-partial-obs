@@ -1,8 +1,7 @@
-# absolute dir of data/
-data_dir: #
-
 # env
 env_name: "lap-joint"
+offset: "0mm"
+dataset_name: "LAP_PYBULLET_0mm_TVBS_FD_WS8_NR3_NS10_CR5"  
 
 # FT sample
 ft_window_size: 8                                     # number of frame to concatenate into one observation
@@ -12,7 +11,7 @@ left_append: True                                     # if true, left in right o
 # NaiveBackwardSampler / TemporalVariantBackwardSampler
 # sampler: "NaiveBackwardSampler"                       
 sampler: "TemporalVariantBackwardSampler"             
-num_expert_rollouts: 3                                # set to any large number (e.g.) to use all rollouts
+num_expert_rollouts: 3                                # number of expert rollouts used to perform backward sampling
 num_seeds: 1                                          # <SET TO 1> number of seed to use for generating samples at each depth
 num_samples: 10                                       # number of samples to generate at each depth
 control_rate: 5                                       # interval (in terms of timesteps) to create a depth

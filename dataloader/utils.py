@@ -71,13 +71,17 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
 
     Returns:
         dict: processed observation, key being name of used sensors, also including depth
-    """    
+    """
     rollout_name, depth_name, sample_name = sample_code.split(".")
     depth = parse_depth(sample_code)
 
-    data_dir = pathlib.Path(config["data_dir"])
-    env_name = config["env_name"]
-    samples_dir = data_dir / env_name / "samples"
+    dataset_dir = (
+        config["data_dir"]
+        / config["env_name"]
+        / config["offset"]
+        / config["dataset_name"]
+    )
+    samples_dir = dataset_dir / "samples"
 
     raw_obs = {}
     for sensor in config["sensor_used"]:
@@ -92,7 +96,9 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
     return obs
 
 
-def process_raw_sample_obs(config: dict, raw_obs: dict, unsqueeze: bool=False) -> dict:
+def process_raw_sample_obs(
+    config: dict, raw_obs: dict, unsqueeze: bool = False
+) -> dict:
     """Process raw observations from backward sampling for torch pipeline
 
     Args:
@@ -101,7 +107,7 @@ def process_raw_sample_obs(config: dict, raw_obs: dict, unsqueeze: bool=False) -
 
     Returns:
         dict: processed observation ready for torch pipeline
-    """    
+    """
     processed_obs = {}
     for sensor in config["sensor_used"]:
         t = raw_obs[sensor]
@@ -117,7 +123,7 @@ def process_raw_sample_obs(config: dict, raw_obs: dict, unsqueeze: bool=False) -
             t = t.transpose((2, 0, 1))
         else:
             pass
-        
+
         processed_obs[sensor] = torch.Tensor(t).double()
 
     if unsqueeze:
@@ -131,8 +137,7 @@ def parse_depth(sample_code: str) -> int:
 
 
 def to_cuda(data_dict: dict):
-  if data_dict is None:
-    return None
-  return {k: v.cuda() for (k, v) in data_dict.items()}  
-
+    if data_dict is None:
+        return None
+    return {k: v.cuda() for (k, v) in data_dict.items()}
 

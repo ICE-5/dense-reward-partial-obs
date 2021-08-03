@@ -10,10 +10,7 @@ from envs.envs_launcher import env_creator
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config",
-        type=str,
-        required=True,
-        help="path of configuration file",
+        "--config", type=str, required=True, help="path of configuration file",
     )
     parser.add_argument(
         "--split-only",
@@ -28,11 +25,19 @@ def parse_args():
 
 def generate_dataset(config, split_only: bool = False) -> None:
     env = env_creator(None)
-    env_name = config["env_name"]
-    data_dir = pathlib.Path(config["data_dir"])
 
-    expert_demo_path = data_dir / env_name / "expert.pkl"
-    output_dir = data_dir / env_name / "samples"
+    dataset_dir = (
+        config["data_dir"]
+        / config["env_name"]
+        / config["offset"]
+        / config["dataset_name"]
+    )
+
+    expert_rollouts_path = dataset_dir / "expert.pkl"
+    if not expert_rollouts_path.is_file():
+        raise Exception(
+            "Missing processed expert rollouts, please run process_rollouts.py first"
+        )
 
     print(f"\nUsing sampler: {config['sampler']}\n")
 
@@ -41,16 +46,14 @@ def generate_dataset(config, split_only: bool = False) -> None:
         sampler = eval(config["sampler"])(
             config,
             env=env,
-            expert_demo_path=expert_demo_path,
-            output_dir=output_dir,
+            expert_rollouts_path=expert_rollouts_path,
             empty_output_dir=False,
         )
     else:
         sampler = eval(config["sampler"])(
             config,
             env=env,
-            expert_demo_path=expert_demo_path,
-            output_dir=output_dir,
+            expert_rollouts_path=expert_rollouts_path,
             empty_output_dir=True,
         )
         sampler.sample()
@@ -62,5 +65,7 @@ if __name__ == "__main__":
     args = parse_args()
     with open(args.config) as f:
         config = yaml.safe_load(f)
+
+    config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
 
     generate_dataset(config, args.split_only)

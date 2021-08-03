@@ -1,5 +1,6 @@
 import argparse
 import yaml
+import pickle
 
 import numpy as np
 
@@ -62,13 +63,19 @@ if __name__ == "__main__":
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    rollouts = process_rollouts(
-        config=config,
-        raw_expert_rollouts_pkl=args.raw_expert_rollouts_pkl,
-        raw_expert_rollouts_csv=None,
-        save=False,
-        sort_by_length=True,
+    config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
+
+    # handle raw expert rollouts pickle file
+    raw_expert_rollouts_path = (
+        config["data_dir"] / config["env_name"] / config["offset"] / "expert_raw.pkl"
     )
+
+    if not raw_expert_rollouts_path.is_file():
+        raise ValueError("Raw expert rollouts pickle missing")
+    with open(raw_expert_rollouts_path, "rb") as reader:
+        raw_expert_rollouts = pickle.load(reader)
+
+    rollouts = process_rollouts(config, raw_expert_rollouts=raw_expert_rollouts)
 
     expert_rollout = rollouts[0]
     eval_succ_rollout = rollouts[1]

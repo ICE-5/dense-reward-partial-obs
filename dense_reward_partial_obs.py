@@ -30,14 +30,15 @@ class DenseRewardPartialObs:
         self.model = PartialObsAutoEncoder(config).double().to(self.device)
 
         # try and parse model ID from model params path
-        try:
-            tmp_model_id = model_params.split("/")[-2]
-            if "-" in tmp_model_id:
-                self.model_id = tmp_model_id
-        except Exception:
-            print(
-                "please try to provide a model id for distinguising logging and plotting"
-            )
+        if model_id == "debug":
+            try:
+                tmp_model_id = model_params.split("/")[-2]
+                if "-" in tmp_model_id:
+                    self.model_id = tmp_model_id
+            except Exception:
+                print(
+                    "please try to provide a model id for distinguishing logging and plotting"
+                )
 
         if model_params is not None:
             ckpt = torch.load(model_params)
@@ -191,7 +192,6 @@ class DenseRewardPartialObs:
         start_raw_obs = expert_rollout[0].obs
         goal_raw_obs = expert_rollout[-1].obs
 
-        
         # process obs
         start_obs = process_raw_sample_obs(self.config, start_raw_obs, unsqueeze=True)
         goal_obs = process_raw_sample_obs(self.config, goal_raw_obs, unsqueeze=True)

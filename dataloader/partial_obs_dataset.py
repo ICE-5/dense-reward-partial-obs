@@ -15,16 +15,16 @@ from dataloader.utils import get_obs_by_code, parse_depth
 class PatialObsDataset(Dataset):
     """ partially observable dataset"""
 
-    def __init__(
-        self, config: dict, phase: str = "train"
-    ):
+    def __init__(self, config: dict, phase: str = "train"):
         self.config = config
-        data_dir = config["data_dir"]
-        env_name = config["env_name"]
+        dataset_dir = (
+            config["data_dir"]
+            / config["env_name"]
+            / config["offset"]
+            / config["dataset_name"]
+        )
 
-        with open(
-            pathlib.Path(data_dir) / env_name / "samples" / f"{phase}_sample_codes.pkl", "rb"
-        ) as f:
+        with open(dataset_dir / "samples" / f"{phase}_sample_codes.pkl", "rb") as f:
             self.sample_codes = pickle.load(f)
 
     def __len__(self):
@@ -54,7 +54,7 @@ class PatialObsDataset(Dataset):
 
         for code in rollout_codes:
             d = parse_depth(code)
-            
+
             if abs(depth - d) < margin:
                 in_margin_codes.append(code)
             else:
@@ -68,7 +68,9 @@ class PatialObsDataset(Dataset):
 
 if __name__ == "__main__":
 
-    config_path = pathlib.Path(__file__).resolve().parent.parent / "configs" / "debug.yaml"
+    config_path = (
+        pathlib.Path(__file__).resolve().parent.parent / "configs" / "debug.yaml"
+    )
     with open(config_path) as f:
         config = yaml.safe_load(f)
 
@@ -78,5 +80,6 @@ if __name__ == "__main__":
     for batch_idx, batch_samples in enumerate(dataloader):
         print("id: ", batch_idx)
         print("samples: ", batch_samples["a_obs"]["ft"].shape)
-        import pdb; pdb.set_trace()
+        import pdb
 
+        pdb.set_trace()

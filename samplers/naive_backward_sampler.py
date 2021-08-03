@@ -14,14 +14,19 @@ class NaiveBackwardSampler:
         self,
         config: dict,
         env: gym.Env,
-        expert_demo_path: pathlib.Path,
-        output_dir: pathlib.Path,
+        expert_rollouts_path: pathlib.Path,
         empty_output_dir: bool = True,
     ) -> None:
 
         self.config = config
         self.env = env
-        self.output_dir = output_dir
+        self.output_dir = (
+            config["data_dir"]
+            / config["env_name"]
+            / config["offset"]
+            / config["dataset_name"]
+            / "samples"
+        )
         self.num_expert_rollouts = config["num_expert_rollouts"]
         self.num_seeds = config["num_seeds"]
         self.num_samples = config["num_samples"]
@@ -29,18 +34,16 @@ class NaiveBackwardSampler:
         self.stop_sampling_threshold = config["stop_sampling_threshold"]
 
         # create tree dir in output_dir
-        if pathlib.Path(output_dir).is_dir():
-            if empty_output_dir:
-                shutil.rmtree(output_dir)
-        else:
-            pathlib.Path(output_dir).mkdir(parents=True, exist_ok=False)
+        pathlib.Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+        if empty_output_dir:
+            shutil.rmtree(self.output_dir)
 
         # load expert demo
-        with open(expert_demo_path, "rb") as f:
-            self.expert_demo = pickle.load(f)
+        with open(expert_rollouts_path, "rb") as f:
+            self.expert_rollouts = pickle.load(f)
 
         # check validity of num_expert_rollouts
-        max_num_expert_rollouts = len(self.expert_demo)
+        max_num_expert_rollouts = len(self.expert_rollouts)
         if self.num_expert_rollouts > max_num_expert_rollouts:
             self.num_expert_rollouts = max_num_expert_rollouts
 
@@ -50,7 +53,7 @@ class NaiveBackwardSampler:
 
     def sample(self):
         for rollout_idx, rollout in enumerate(
-            self.expert_demo[: self.num_expert_rollouts]
+            self.expert_rollouts[: self.num_expert_rollouts]
         ):
             rollout_name = f"R{rollout_idx:03d}"
             backward_rollout = rollout[::-1]
