@@ -20,13 +20,27 @@ def parse_args():
 
 def process_rollouts(
     config: dict,
-    raw_expert_rollouts: list,
+    raw_expert_rollouts_path: str or None = None,
     num_output_rollouts: int or None = None,
     selected_rollout_indices: list or None = None,
     save: bool = False,
 ) -> None:
 
-    processed_rollouts = []
+    if raw_expert_rollouts_path is None:
+        raw_expert_rollouts_path = (
+            config["data_dir"]
+            / config["env_name"]
+            / config["offset"]
+            / "rd2"
+            / "expert_raw.pkl"
+        )
+    raw_expert_rollouts_path = pathlib.Path(raw_expert_rollouts_path)
+    if not raw_expert_rollouts_path.is_file():
+        raise ValueError("Invalid raw expert rollouts path, file not exists")
+    with open(raw_expert_rollouts_path, "rb") as reader:
+        raw_expert_rollouts = pickle.load(reader)
+
+    output = []
 
     if selected_rollout_indices is not None:
         output_rollout_idxs = selected_rollout_indices
@@ -67,7 +81,7 @@ def process_rollouts(
                 dist_reward=step[3],
             )
             reformatted_rollout.append(sample)
-        processed_rollouts.append(reformatted_rollout)
+        output.append(reformatted_rollout)
 
     if save:
         save_dir = (
@@ -77,9 +91,12 @@ def process_rollouts(
             / config["dataset_name"]
         )
         save_dir.mkdir(parents=True, exist_ok=True)
-        pickle.dump(processed_rollouts, open(save_dir / "expert.pkl", "wb"))
+        pickle.dump(output, open(save_dir / "expert.pkl", "wb"))
+    
+    if num_output_rollouts == 1:
+        output = output[0]
 
-    return processed_rollouts
+    return output
 
 
 if __name__ == "__main__":
@@ -89,22 +106,9 @@ if __name__ == "__main__":
 
     config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
 
-    # handle raw expert rollouts pickle file
-    raw_expert_rollouts_path = (
-        config["data_dir"]
-        / config["env_name"]
-        / config["offset"]
-        / "rd2"
-        / "expert_raw.pkl"
-    )
-    if not raw_expert_rollouts_path.is_file():
-        raise ValueError("Raw expert rollouts pickle missing")
-    with open(raw_expert_rollouts_path, "rb") as reader:
-        raw_expert_rollouts = pickle.load(reader)
 
     process_rollouts(
         config,
-        raw_expert_rollouts=raw_expert_rollouts,
         num_output_rollouts=config["num_expert_rollouts"],
         save=True,
     )

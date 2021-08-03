@@ -65,17 +65,7 @@ if __name__ == "__main__":
 
     config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
 
-    # handle raw expert rollouts pickle file
-    raw_expert_rollouts_path = (
-        config["data_dir"] / config["env_name"] / config["offset"] / "expert_raw.pkl"
-    )
-
-    if not raw_expert_rollouts_path.is_file():
-        raise ValueError("Raw expert rollouts pickle missing")
-    with open(raw_expert_rollouts_path, "rb") as reader:
-        raw_expert_rollouts = pickle.load(reader)
-
-    rollouts = process_rollouts(config, raw_expert_rollouts=raw_expert_rollouts)
+    rollouts = process_rollouts(config,)
 
     expert_rollout = rollouts[0]
     eval_succ_rollout = rollouts[1]
