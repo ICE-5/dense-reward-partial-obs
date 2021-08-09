@@ -19,9 +19,8 @@ class DenseRewardPartialObs:
     """
 
     def __init__(
-        self, config: dict, model_id: str = "debug", model_params: str = None
+        self, config: dict, model_id: str or None = None, model_params: str = None
     ) -> None:
-        # self.model_id = datetime.now().strftime("%m%d%Y-%H%M%S")
         self.model_id = model_id
         self.config = config
         self.device = torch.device(
@@ -30,15 +29,16 @@ class DenseRewardPartialObs:
         self.model = PartialObsAutoEncoder(config).double().to(self.device)
 
         # try and parse model ID from model params path
-        if model_id == "debug":
+        if model_id is None:
             try:
                 tmp_model_id = model_params.split("/")[-2]
                 if "-" in tmp_model_id:
                     self.model_id = tmp_model_id
             except Exception:
                 print(
-                    "please try to provide a model id for distinguishing logging and plotting"
+                    ">>>>> please try to provide a model id for distinguishing logging and plotting"
                 )
+                self.model_id = "eval"
 
         if model_params is not None:
             ckpt = torch.load(model_params)

@@ -14,44 +14,27 @@ class NaiveBackwardSampler:
         self,
         config: dict,
         env: gym.Env,
-        expert_rollouts_path: pathlib.Path,
-        empty_output_dir: bool = True,
+        expert_rollouts: list,
+        output_dir: pathlib.Path,
     ) -> None:
-
         self.config = config
         self.env = env
-        self.output_dir = (
-            config["data_dir"]
-            / config["env_name"]
-            / config["offset"]
-            / config["dataset_name"]
-            / "samples"
-        )
-        self.num_expert_rollouts = config["num_expert_rollouts"]
+        self.expert_rollouts = expert_rollouts
+        self.output_dir = output_dir
+
+        self.num_expert_rollouts = len(self.expert_rollouts)
         self.num_seeds = config["num_seeds"]
         self.num_samples = config["num_samples"]
         self.control_rate = config["control_rate"]
-        self.stop_sampling_threshold = config["stop_sampling_threshold"]
-
-        # create tree dir in output_dir
-        pathlib.Path(self.output_dir).mkdir(parents=True, exist_ok=True)
-        if empty_output_dir:
-            shutil.rmtree(self.output_dir)
-
-        # load expert demo
-        with open(expert_rollouts_path, "rb") as f:
-            self.expert_rollouts = pickle.load(f)
-
-        # check validity of num_expert_rollouts
-        max_num_expert_rollouts = len(self.expert_rollouts)
-        if self.num_expert_rollouts > max_num_expert_rollouts:
-            self.num_expert_rollouts = max_num_expert_rollouts
 
         self.sample_codes = []
         self.train_sample_codes = []
         self.test_sample_codes = []
 
     def sample(self):
+        # empty output directory before sampling
+        shutil.rmtree(self.output_dir)
+        
         for rollout_idx, rollout in enumerate(
             self.expert_rollouts[: self.num_expert_rollouts]
         ):

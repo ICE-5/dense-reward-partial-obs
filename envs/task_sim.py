@@ -80,10 +80,35 @@ class TaskSim(Task):
                 # self.view_matrix = camera_params[2]
                 # self.projection_matrix = camera_params[3]
 
+                # print(self.view_matrix)
+                # print(self.projection_matrix)
+
         else:
             p.connect(p.DIRECT)
 
+        self.projection_matrix = (
+            0.7499999403953552,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            -1.0000200271606445,
+            -1.0,
+            0.0,
+            0.0,
+            -0.02000020071864128,
+            0.0,
+        )
+
         # p.configureDebugVisualizer(p.COV_ENABLE_GUI, 0)
+        # p.configureDebugVisualizer(p.COV_ENABLE_SEGMENTATION_MARK_PREVIEW, 0)
+        # p.configureDebugVisualizer(p.COV_ENABLE_DEPTH_BUFFER_PREVIEW, 0)
+        # p.configureDebugVisualizer(p.COV_ENABLE_RGB_BUFFER_PREVIEW, 0)
 
         self.seed()
 
@@ -159,11 +184,14 @@ class TaskSim(Task):
             distance=0.2,
             yaw=180,
             pitch=-41,
-            roll=180,
-            upAxisIndex=1,
+            roll=0,
+            upAxisIndex=2,
         )
         _, _, rgbaimg, depthmap, segimg = p.getCameraImage(
-            width=128, height=128, viewMatrix=view_matrix
+            width=128,
+            height=128,
+            viewMatrix=view_matrix,
+            projectionMatrix=self.projection_matrix,
         )
 
         pos, orn = self.env.get_member_pose()

@@ -27,7 +27,8 @@ control_angle_mid: 95
 ft_z_dim: 64
 depthmap_z_dim: 64
 z_dim: 128                                            # try 48
-sensor_used: ["ft", "depthmap"]                                 # "depthmap" / "ft" / TBA
+# sensor_used: ["ft", "depthmap"]                                 # "depthmap" / "ft" / TBA
+sensor_used: ["depthmap", ] 
 
 # training
 initialize_weights: True

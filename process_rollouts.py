@@ -21,10 +21,12 @@ def parse_args():
 def process_rollouts(
     config: dict,
     raw_expert_rollouts_path: str or None = None,
-    num_output_rollouts: int or None = None,
     selected_rollout_indices: list or None = None,
+    num_output_rollouts: int or None = None,
+    sort_by_length: bool = True,
     save: bool = False,
-) -> None:
+    save_name: str or None = None,
+) -> list:
 
     if raw_expert_rollouts_path is None:
         raw_expert_rollouts_path = (
@@ -45,10 +47,7 @@ def process_rollouts(
     if selected_rollout_indices is not None:
         output_rollout_idxs = selected_rollout_indices
     else:
-        raw_expert_rollouts.sort(key=len)
-        if num_output_rollouts is None:
-            num_output_rollouts = len(raw_expert_rollouts)
-        output_rollout_idxs = list(range(num_output_rollouts))
+        output_rollout_idxs = list(range(len(raw_expert_rollouts)))
 
     for idx in output_rollout_idxs:
         rollout = raw_expert_rollouts[idx]
@@ -83,18 +82,20 @@ def process_rollouts(
             reformatted_rollout.append(sample)
         output.append(reformatted_rollout)
 
+    # sort output by rollout length
+    if sort_by_length:
+        output.sort(key=len)
+
+    # slice rollouts by given number
+    if num_output_rollouts is not None:
+        output = output[:num_output_rollouts]
+
     if save:
-        save_dir = (
-            config["data_dir"]
-            / config["env_name"]
-            / config["offset"]
-            / config["dataset_name"]
-        )
+        if save_name is not None:
+            save_name
+        save_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
         save_dir.mkdir(parents=True, exist_ok=True)
         pickle.dump(output, open(save_dir / "expert.pkl", "wb"))
-    
-    if num_output_rollouts == 1:
-        output = output[0]
 
     return output
 
@@ -106,10 +107,31 @@ if __name__ == "__main__":
 
     config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
 
+    # load successful rollout indices
+    with open(
+        config["data_dir"]
+        / config["env_name"]
+        / config["offset"]
+        / "rd2"
+        / "expert_raw.csv"
+    ) as f:
+        reader = csv.reader(f, delimiter=",")
+        for row in reader:
+            selected_rollout_indices = row
+    selected_rollout_indices = [int(x) for x in selected_rollout_indices]
 
-    process_rollouts(
+    output = process_rollouts(
         config,
-        num_output_rollouts=config["num_expert_rollouts"],
+        selected_rollout_indices=selected_rollout_indices,
+        num_output_rollouts=None,
         save=True,
+    )
+
+    # also save best exoert rollout
+    save_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
+    pickle.dump(output[0], open(save_dir / "best_expert.pkl", "wb"))
+
+    print(
+        f"\n>>>>> finished processing, please check this directory for output: {save_dir}\n"
     )
 

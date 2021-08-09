@@ -61,6 +61,7 @@ class PartialObsAutoEncoder(nn.Module):
         # fuse the 4 hidden vectors
         concat_encs = []
         for sensor in self.config["sensor_used"]:
+            # print(f"{sensor}, {eval(f'{sensor}_enc').shape}")
             concat_encs.append(getattr(self, f"{sensor}_enc"))
         z = self.fusion_net(torch.cat(concat_encs, dim=1))
         z = z / torch.norm(z, dim=1, keepdim=True)  # normalize the z

@@ -1,6 +1,7 @@
 import yaml
 import argparse
 import pathlib
+import pickle
 
 from samplers.naive_backward_sampler import NaiveBackwardSampler
 from samplers.temporal_variant_backward_sampler import TemporalVariantBackwardSampler
@@ -23,39 +24,50 @@ def parse_args():
     return args
 
 
-def generate_dataset(config, split_only: bool = False) -> None:
+def generate_dataset(config: dict, split_only: bool = False) -> None:
+    # check env parameters in envs_launcher.py
     env = env_creator(None)
 
-    dataset_dir = (
+    # load and process expert demo
+    expert_rollouts_path = (
+        config["data_dir"]
+        / config["env_name"]
+        / config["offset"]
+        / "rd2"
+        / "expert.pkl"
+    )
+    if not expert_rollouts_path.is_file():
+        raise Exception(
+            "Missing processed expert rollouts, please run process_rollouts.py first"
+        )
+    with open(expert_rollouts_path, "rb") as f:
+        expert_rollouts = pickle.load(f)
+    num_expert_rollouts = (
+        config["num_expert_rollouts"]
+        if config["num_expert_rollouts"] < len(expert_rollouts)
+        else len(expert_rollouts)
+    )
+    expert_rollouts = expert_rollouts[:num_expert_rollouts]
+
+    # specify output dir by dataset name
+    output_dir = (
         config["data_dir"]
         / config["env_name"]
         / config["offset"]
         / config["dataset_name"]
     )
+    pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    expert_rollouts_path = dataset_dir / "expert.pkl"
-    if not expert_rollouts_path.is_file():
-        raise Exception(
-            "Missing processed expert rollouts, please run process_rollouts.py first"
-        )
-
-    print(f"\nUsing sampler: {config['sampler']}\n")
+    print(f"\n>>>>> using sampler: {config['sampler']}\n")
+    sampler = eval(config["sampler"])(
+        config,
+        env=env,
+        expert_rollouts=expert_rollouts,
+        output_dir=output_dir,
+    )
 
     # sample and split
-    if split_only:
-        sampler = eval(config["sampler"])(
-            config,
-            env=env,
-            expert_rollouts_path=expert_rollouts_path,
-            empty_output_dir=False,
-        )
-    else:
-        sampler = eval(config["sampler"])(
-            config,
-            env=env,
-            expert_rollouts_path=expert_rollouts_path,
-            empty_output_dir=True,
-        )
+    if not split_only:
         sampler.sample()
 
     sampler.split_train_test()

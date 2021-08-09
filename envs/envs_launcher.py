@@ -11,7 +11,7 @@ if t == 'sim':
                               self_collision_enabled=True,  # collision setting for pybullet
                               
                               # check it between run and train mode
-                              renders=True,  # normally for running sim and rolling out in sim, this is set to True; for training, False.
+                              renders=False,  # normally for running sim and rolling out in sim, this is set to True; for training, False.
                               
                               ft_noise=False,  # domain randomization on force/torque observation
                               pose_noise=False,  # domain randomization on pose observation

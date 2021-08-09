@@ -63,6 +63,7 @@ class FtEncoder(nn.Module):
 
   def forward(self, force):
     return self.ft_encoder(force).squeeze(2)
+    # return self.ft_encoder(force).reshape([-1, 64])
 
 
 class ImageEncoder(nn.Module):
