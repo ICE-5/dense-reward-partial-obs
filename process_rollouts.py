@@ -95,7 +95,7 @@ def process_rollouts(
             save_name
         save_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
         save_dir.mkdir(parents=True, exist_ok=True)
-        pickle.dump(output, open(save_dir / "expert.pkl", "wb"))
+        pickle.dump(output, open(save_dir / f"expert_{config['ft_window_size']}.pkl", "wb"))
 
     return output
 
@@ -129,7 +129,7 @@ if __name__ == "__main__":
 
     # also save best exoert rollout
     save_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
-    pickle.dump(output[0], open(save_dir / "best_expert.pkl", "wb"))
+    pickle.dump(output[0], open(save_dir / f"best_expert_{config['ft_window_size']}.pkl", "wb"))
 
     print(
         f"\n>>>>> finished processing, please check this directory for output: {save_dir}\n"
