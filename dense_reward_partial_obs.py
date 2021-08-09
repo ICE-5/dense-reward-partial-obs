@@ -48,8 +48,8 @@ class DenseRewardPartialObs:
         # init logging service
         self.model_log_path = pathlib.Path("logs") / self.model_id
         self.model_log_path.mkdir(parents=True, exist_ok=True)
-        self.model_save_path = pathlib.Path("checkpoints") / self.model_id
-        self.model_save_path.mkdir(parents=True, exist_ok=True)
+        self.model_save_dir = pathlib.Path("checkpoints") / self.model_id
+        self.model_save_dir.mkdir(parents=True, exist_ok=True)
 
         # set up logging
         tb_writer = SummaryWriter(self.model_log_path)
@@ -183,7 +183,7 @@ class DenseRewardPartialObs:
                             "optimizer_state_dict": optimizer.state_dict(),
                             "loss": loss,
                         },
-                        self.save_dir / f"{iters}.pt",
+                        self.model_save_dir / f"{iters}.pt",
                     )
 
                 if iters > self.config["num_iters"]:
