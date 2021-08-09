@@ -16,7 +16,7 @@ class PartialObsAutoEncoder(nn.Module):
         initialize_weights = config["initialize_weights"]
 
         self.concat_z_dim = 0
-        for sensor in config["sensor_used"]:
+        for sensor in config["sensor_used_in_model"]:
             setattr(self, f"{sensor}_z_dim", config[f"{sensor}_z_dim"])
             setattr(
                 self,
@@ -48,7 +48,7 @@ class PartialObsAutoEncoder(nn.Module):
 
     def encode(self, obs):
         # encode multi-modal sensor data into a hidden vector
-        for sensor in self.config["sensor_used"]:
+        for sensor in self.config["sensor_used_in_model"]:
             # TODO: try locals() or globals()
             input = obs[sensor].double()
             if len(input.shape) == 2:
@@ -60,7 +60,7 @@ class PartialObsAutoEncoder(nn.Module):
 
         # fuse the 4 hidden vectors
         concat_encs = []
-        for sensor in self.config["sensor_used"]:
+        for sensor in self.config["sensor_used_in_model"]:
             # print(f"{sensor}, {eval(f'{sensor}_enc').shape}")
             concat_encs.append(getattr(self, f"{sensor}_enc"))
         z = self.fusion_net(torch.cat(concat_encs, dim=1))
@@ -69,7 +69,7 @@ class PartialObsAutoEncoder(nn.Module):
 
     def decode(self, z):
         decoded_output = {}
-        for sensor in self.config["sensor_used"]:
+        for sensor in self.config["sensor_used_in_model"]:
             decoded_output[f"decoded_{sensor}"] = eval(f"self.{sensor}_decoder")(z)
         return decoded_output
 
@@ -98,7 +98,7 @@ class PartialObsAutoEncoder(nn.Module):
 
     def compute_reconstruction_loss(self, data_input, decoded_output):
         recon_loss = 0.0
-        for sensor in self.config["sensor_used"]:
+        for sensor in self.config["sensor_used_in_model"]:
             # if "map" in sensor or "img" in sensor:
             #     recon_loss += self.bce_with_continuous_target(
             #         decoded_output[f"decoded_{sensor}"], data_input[f"{sensor}"],

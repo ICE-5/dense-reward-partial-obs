@@ -63,7 +63,7 @@ def process_rollouts(
             ftw.update(step[2])
 
             obs = {}
-            for sensor in config["sensor_used"]:
+            for sensor in config["sensor_used_in_sampling"]:
                 if sensor == "ft":
                     obs["ft"] = copy.deepcopy(ftw.window)
                 else:

@@ -81,12 +81,11 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
         / config["offset"]
         / config["dataset_name"]
     )
-    samples_dir = dataset_dir / "samples"
 
     raw_obs = {}
-    for sensor in config["sensor_used"]:
+    for sensor in config["sensor_used_in_model"]:
         with open(
-            samples_dir / rollout_name / depth_name / f"{sensor}.pkl", "rb",
+            dataset_dir / rollout_name / depth_name / f"{sensor}.pkl", "rb",
         ) as f:
             raw_obs[sensor] = pickle.load(f)[sample_name]
 
@@ -109,7 +108,7 @@ def process_raw_sample_obs(
         dict: processed observation ready for torch pipeline
     """
     processed_obs = {}
-    for sensor in config["sensor_used"]:
+    for sensor in config["sensor_used_in_model"]:
         t = raw_obs[sensor]
 
         if "ft" in sensor:

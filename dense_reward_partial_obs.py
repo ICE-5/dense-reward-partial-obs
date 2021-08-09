@@ -125,7 +125,7 @@ class DenseRewardPartialObs:
                 # log in terminal output
                 if iters % self.config["log_freq"] == 0:
                     print(
-                        f"Iter: {iters:8d} Loss: {loss.item():0.3f} Reconstruct Loss: {recon_loss.item():0.3f} Comparison Loss: {cmp_loss.item():0.3f}"
+                        f"Iter: {iters:8d} Loss: {loss.item():0.3f} Reconstruction Loss: {recon_loss.item():0.3f} Comparison Loss: {cmp_loss.item():0.3f}"
                     )
 
                     test_losses, test_recon_losses, test_cmp_losses = [], [], []

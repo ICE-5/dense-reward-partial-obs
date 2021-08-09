@@ -24,7 +24,7 @@ class PatialObsDataset(Dataset):
             / config["dataset_name"]
         )
 
-        with open(dataset_dir / "samples" / f"{phase}_sample_codes.pkl", "rb") as f:
+        with open(dataset_dir / f"{phase}_sample_codes.pkl", "rb") as f:
             self.sample_codes = pickle.load(f)
 
     def __len__(self):

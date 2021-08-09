@@ -1,7 +1,8 @@
 # env
 env_name: "lap-joint"
 offset: "0mm"
-dataset_name: "LAP_PYBULLET_0mm_TVBS_FD_WS8_NR3_NS10_CR5"  
+dataset_name: "LAP_PYBULLET_0mm_TVBS_FD_WS8_NR3_NS10_CR5"
+sensor_used_in_sampling: ["ft", "depthmap"]
 
 # FT sample
 ft_window_size: 8                                     # number of frame to concatenate into one observation
@@ -28,7 +29,7 @@ control_angle_mid: 95
 ft_z_dim: 64
 depthmap_z_dim: 64
 z_dim: 128                                            # try 48
-sensor_used: ["ft", ]                                 # "depthmap" / "ft" / TBA
+sensor_used_in_model: ["ft", ]                                 # "depthmap" / "ft" / TBA
 
 # training
 initialize_weights: True

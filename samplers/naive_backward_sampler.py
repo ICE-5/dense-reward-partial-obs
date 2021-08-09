@@ -52,7 +52,7 @@ class NaiveBackwardSampler:
                 # update and add expert
                 expert = backward_rollout[timestep]
 
-                for sensor in self.config["sensor_used"]:
+                for sensor in self.config["sensor_used_in_sampling"]:
                     globals()[f"{sensor}_layer"] = {}
                     eval(f"{sensor}_layer")["expert"] = expert.obs[sensor]
 
@@ -80,7 +80,7 @@ class NaiveBackwardSampler:
                                 # ft sensor observation
                                 ftw.insert(ft, 0)
                                 # other sensor observation
-                                for sensor in self.config["sensor_used"]:
+                                for sensor in self.config["sensor_used_in_sampling"]:
                                     if sensor != "ft":
                                         eval(f"{sensor}_layer")[sample_name] = info[
                                             sensor
@@ -92,14 +92,14 @@ class NaiveBackwardSampler:
                             ft, _, _, info = self.env.step(action)
                             ftw.insert(ft, i)
 
-                        if "ft" in self.config["sensor_used"]:
+                        if "ft" in self.config["sensor_used_in_sampling"]:
                             ft_layer[sample_name] = copy.deepcopy(ftw.window)
 
                         self.sample_codes.append(
                             f"{rollout_name}.{depth_name}.{sample_name}"
                         )
 
-                for sensor in self.config["sensor_used"]:
+                for sensor in self.config["sensor_used_in_sampling"]:
                     pickle.dump(
                         eval(f"{sensor}_layer"),
                         open(depth_path / f"{sensor}.pkl", "wb"),
