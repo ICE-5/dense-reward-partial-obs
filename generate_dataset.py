@@ -34,7 +34,7 @@ def generate_dataset(config: dict, split_only: bool = False) -> None:
         / config["env_name"]
         / config["offset"]
         / "rd2"
-        / f"expert_{config['ft_window_size']}.pkl"
+        / f"processed_expert_{config['ft_window_size']}.pkl"
     )
     if not expert_rollouts_path.is_file():
         raise Exception(
