@@ -54,7 +54,9 @@ if __name__ == "__main__":
 
     rollout_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
 
-    with open(rollout_dir / "best_expert.pkl", "rb") as f:
+    with open(
+        rollout_dir / f"processed_expert_{config['ft_window_size']}_best.pkl", "rb"
+    ) as f:
         expert_rollout = pickle.load(f)
 
     # load successful rollout indices
