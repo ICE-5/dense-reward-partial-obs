@@ -53,7 +53,7 @@ class DenseRewardPartialObs:
 
         # set up logging
         tb_writer = SummaryWriter(self.model_log_path)
-        csv_f = open(self.model_log_path / "plot.csv", "w")
+        csv_f = open(self.model_log_path / f"{self.model_id}.csv", "w")
         csv_writer = csv.writer(csv_f)
         csv_writer.writerow(
             [

@@ -73,7 +73,7 @@ if __name__ == "__main__":
     drpo = DenseRewardPartialObs(config=config, model_params=args.model_params)
     drpo.set_expert_demo(expert_rollout=expert_rollout)
 
-    save_dir = pathlib.Path("media") / drpo.model_id
+    save_dir = pathlib.Path("media") / drpo.model_id / "vis_reward"
     save_dir.mkdir(parents=True, exist_ok=True)
 
     for i, rollout in enumerate(rollouts):
@@ -92,6 +92,6 @@ if __name__ == "__main__":
             ys=ys,
             save_dir=save_dir,
             title=f"rollout #{i} {name}",
-            save_name=f"eval_{drpo.model_id}_{i}_{name}",
+            save_name=f"rollout_{i}_{name}",
         )
 

@@ -114,7 +114,7 @@ class ImageDecoder(nn.Module):
     z = z.unsqueeze(2).unsqueeze(3)
     out_image = self.image_decoder(z)
     out_image = nn.functional.interpolate(
-      out_image, size=(128, 128), mode="bilinear")
+      out_image, size=(128, 128), mode="bilinear", align_corners=True)
     out_image = torch.sigmoid(out_image)
     return out_image
 
@@ -165,5 +165,5 @@ class DepthmapDecoder(nn.Module):
     #   out_image = nn.functional.interpolate(out_image, scale_factor=2, mode="bilinear")
     #   out_image = eval("self.depth_decoder_{}".format(i))(out_image)
     # out_image = self.image_decoder(z)
-    out_image = nn.functional.interpolate(out_image, size=(128, 128), mode="bilinear")
+    out_image = nn.functional.interpolate(out_image, size=(128, 128), mode="bilinear", align_corners=True)
     return out_image
