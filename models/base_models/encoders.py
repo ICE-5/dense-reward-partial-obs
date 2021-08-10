@@ -44,13 +44,16 @@ class FtEncoder(nn.Module):
     self.z_dim = z_dim
 
     self.ft_encoder = nn.Sequential(
-      CausalConv1D(6, 16, kernel_size=2, stride=2),
+      CausalConv1D(6, 16, kernel_size=2, stride=4),
+      # CausalConv1D(6, 16, kernel_size=2, stride=2),
       # nn.Dropout(0.5),
       nn.LeakyReLU(0.1, inplace=True),
-      CausalConv1D(16, 32, kernel_size=2, stride=2),
+      CausalConv1D(16, 32, kernel_size=2, stride=4),
+      # CausalConv1D(16, 32, kernel_size=2, stride=2),
       # nn.Dropout(0.5),
       nn.LeakyReLU(0.1, inplace=True),
-      CausalConv1D(32, 64, kernel_size=2, stride=2),
+      CausalConv1D(32, 64, kernel_size=2, stride=4),
+      # CausalConv1D(32, 64, kernel_size=2, stride=2),
       # nn.Dropout(0.5),
       nn.LeakyReLU(0.1, inplace=True),
       CausalConv1D(64, self.z_dim, kernel_size=2, stride=1),

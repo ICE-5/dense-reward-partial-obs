@@ -54,13 +54,16 @@ class FtDecoder(nn.Module):
       nn.ConvTranspose1d(z_dim, 64, kernel_size=2, stride=1), # input n*z_dim*1
       nn.Dropout(0.5),
       nn.LeakyReLU(0.1, inplace=True),
-      nn.ConvTranspose1d(64, 32, kernel_size=2, stride=2), # input n*z_dim*2
+      nn.ConvTranspose1d(64, 32, kernel_size=2, stride=4), # input n*z_dim*2
+      # nn.ConvTranspose1d(64, 32, kernel_size=2, stride=2), # input n*z_dim*2
       nn.Dropout(0.5),
       nn.LeakyReLU(0.1, inplace=True),
-      nn.ConvTranspose1d(32, 16, kernel_size=2, stride=2), # input n*z_dim*4
+      nn.ConvTranspose1d(32, 16, kernel_size=2, stride=4), # input n*z_dim*4
+      # nn.ConvTranspose1d(32, 16, kernel_size=2, stride=2), # input n*z_dim*4
       nn.Dropout(0.5),
       nn.LeakyReLU(0.1, inplace=True),
-      nn.ConvTranspose1d(16, 6, kernel_size=1, stride=1), # input n*z_dim*8
+      nn.ConvTranspose1d(16, 6, kernel_size=1, stride=3), # input n*z_dim*8
+      # nn.ConvTranspose1d(16, 6, kernel_size=1, stride=1), # input n*z_dim*8
       nn.Dropout(0.5),
       nn.LeakyReLU(0.1, inplace=True),
     )
