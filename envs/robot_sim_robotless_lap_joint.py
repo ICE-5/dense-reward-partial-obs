@@ -42,7 +42,6 @@ class RobotSimRobotlessLapJoint:
             INITIAL_POS[2] = INITIAL_POS[2] + random.uniform(0.000, 0.010)
         if random_rotation:
             pass
-
         self.uid = p.loadURDF(
             URDF_PATH_TOOL,
             basePosition=INITIAL_POS,
@@ -166,3 +165,9 @@ class RobotSimRobotlessLapJoint:
 
         p.changeConstraint(self.base_constraint, new_pos, INITIAL_ORN, self.max_force)
     
+    def get_base_pose(self):
+        base_pose = p.getBasePositionAndOrientation(self.uid)
+        return [base_pose[0], base_pose[1]]
+    
+    def set_base_pose(self, pose):
+        p.resetBasePositionAndOrientation(self.uid, pose[0], pose[1])

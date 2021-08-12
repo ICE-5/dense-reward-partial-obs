@@ -125,15 +125,13 @@ class TaskSim(Task):
         self.env.enable_force_torque_sensor()
 
         if initial_pose is not None:
-            self.env.set_member_pose(initial_pose)
-            # p.stepSimulation()
+            # self.env.set_member_pose(initial_pose)
+            self.env.set_base_pose(initial_pose)
             self._observation = self.get_extended_observation()
 
         else:
             p.stepSimulation()
-
             self.correlated_noise()
-
             self._observation = self.get_extended_observation()
             self.add_observation_noise()
 
@@ -148,6 +146,12 @@ class TaskSim(Task):
 
     def get_member_pose(self):
         return self.env.get_member_pose()
+    
+    def get_base_pose(self):
+        return self.env.get_base_pose()
+    
+    def set_base_pose(self):
+        return self.env.set_base_pose()
 
     def get_target_pose(self):
         return self.env.get_target_pose()
@@ -194,15 +198,18 @@ class TaskSim(Task):
             projectionMatrix=self.projection_matrix,
         )
 
-        pos, orn = self.env.get_member_pose()
+        pos, orn = self.env.get_base_pose()
+        m_pos, m_orn = self.env.get_member_pose()
         info = {}
         info["num_success"] = num_success
         info["pos"] = pos
         info["orn"] = orn
+        info["m_pos"] = m_pos
+        info["m_orn"] = m_orn
         info["rgbaimg"] = rgbaimg
         info["depthmap"] = depthmap
         info["segimg"] = segimg
-
+        
         # debug
         # np.set_printoptions(precision=3, suppress=True)
         # print(np.array(self._observation))

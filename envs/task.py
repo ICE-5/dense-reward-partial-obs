@@ -172,6 +172,9 @@ class Task(ABC, gym.Env):
         # print("delta: {}".format(delta))
 
         return self.step2(delta)
+    
+    def set_base_pose(self, pose):
+        self.set_base_pose(pose)
 
     # To be overridden
     def step2(self, delta):

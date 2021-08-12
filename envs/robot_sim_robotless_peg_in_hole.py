@@ -130,9 +130,9 @@ class RobotSimRobotlessPegInHole():
         p.changeConstraint(self.base_constraint, new_pos, INITIAL_ORN, self.max_force)
     
     # [YUNING] add simple interface for sampling
-    def set_pos_orn(self, pos, orn):
-        p.changeConstraint(self.base_constraint, pos, orn, self.max_force)
-
-    def get_pos_orn(self):
-        base_pos, base_orn = p.getBasePositionAndOrientation(self.uid)
-        return base_pos, base_orn
+    def get_base_pose(self):
+        base_pose = p.getBasePositionAndOrientation(self.uid)
+        return [base_pose[0], base_pose[1]]
+    
+    def set_base_pose(self, pose):
+        p.resetBasePositionAndOrientation(self.uid, pose[0], pose[1])

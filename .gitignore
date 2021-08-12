@@ -9,6 +9,7 @@ configs/*
 !configs/template.yaml
 !configs/debug.yaml
 data/
+!data/lap-joint/0mm/rd2/rd2_pybullet_checkpoints
 debug/
 media/
 plots/

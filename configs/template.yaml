@@ -1,8 +1,8 @@
 # env
 env_name: "lap-joint"
 offset: "0mm"
-dataset_name: "LAP_PYBULLET_0mm_TVBS_FD_WS8_NR3_NS10_CR5"
-sensor_used_in_sampling: ["ft", "depthmap"]
+dataset_name: "LAP_PYBULLET_0mm_TVBS_F_WS8_NR3_NS10_CR5"
+sensor_used_in_sampling: ["ft", ]
 
 # FT sample
 ft_window_size: 8                                     # number of frame to concatenate into one observation
@@ -18,6 +18,11 @@ num_samples: 10                                       # number of samples to gen
 control_rate: 5                                       # interval (in terms of timesteps) to create a depth
 stop_sampling_threshold: 0.5                          # [NAIVE BACKWARD SAMPLER ONLY] threshold to control the end of sampling
 train_test_split: 0.7
+
+# control sampling rollback (no need to change normally)
+num_rollbacks_per_trial: 3
+restore_threshold: 0.000005
+num_rollbacks_final_trial: 15
 
 # specific to temporal variant sampler
 use_history: False

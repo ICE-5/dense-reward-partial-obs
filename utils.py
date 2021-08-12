@@ -4,6 +4,13 @@ import sys
 import numpy as np
 from matplotlib import pyplot as plt
 
+def prGreen(skk):
+    print("\033[92m {}\033[00m" .format(skk))
+
+
+def prRed(skk):
+    print("\033[91m {}\033[00m" .format(skk))
+
 
 def plot_curves(
     x: list or np.ndarray, ys: dict, title: str, save_dir: str, save_name: str
