@@ -2,7 +2,8 @@ import copy
 import argparse
 import pathlib
 import csv
-import pickle, yaml
+import pickle
+import yaml
 import numpy as np
 
 from dataloader.utils import Sample, FTWindow
@@ -12,6 +13,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config", type=str, required=True, help="path of configuration file",
+    )
+    parser.add_argument(
+        "--name", type=str, default="raw_expert", help="name of raw expert rollout .pkl & .csv file",
     )
 
     args = parser.parse_args()
@@ -34,13 +38,16 @@ def process_rollouts(
             / config["env_name"]
             / config["offset"]
             / "rd2"
-            / "expert_raw.pkl"
+            / "raw_expert.pkl"
         )
     raw_expert_rollouts_path = pathlib.Path(raw_expert_rollouts_path)
     if not raw_expert_rollouts_path.is_file():
         raise ValueError("Invalid raw expert rollouts path, file not exists")
     with open(raw_expert_rollouts_path, "rb") as reader:
         raw_expert_rollouts = pickle.load(reader)
+    
+    name = raw_expert_rollouts_path.stem
+    reformatted_name = "_".join(name.split("_")[1:])
 
     output = []
 
@@ -93,11 +100,13 @@ def process_rollouts(
     if save:
         if save_name is not None:
             save_name
-        save_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
+        save_dir = config["data_dir"] / \
+            config["env_name"] / config["offset"] / "rd2"
         save_dir.mkdir(parents=True, exist_ok=True)
         pickle.dump(
             output,
-            open(save_dir / f"processed_expert_{config['ft_window_size']}.pkl", "wb"),
+            open(save_dir /
+                 f"processed_{reformatted_name}_{config['ft_window_size']}.pkl", "wb"),
         )
 
     return output
@@ -109,14 +118,11 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
+    storage_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
 
     # load successful rollout indices
     with open(
-        config["data_dir"]
-        / config["env_name"]
-        / config["offset"]
-        / "rd2"
-        / "expert_raw.csv"
+        storage_dir / f"{args.name}.csv"
     ) as f:
         reader = csv.reader(f, delimiter=",")
         for row in reader:
@@ -125,19 +131,23 @@ if __name__ == "__main__":
 
     output = process_rollouts(
         config,
+        raw_expert_rollouts_path=storage_dir / f"{args.name}.pkl",
         selected_rollout_indices=selected_rollout_indices,
         num_output_rollouts=None,
         save=True,
     )
 
+    reformatted_name = "_".join(args.name.split("_")[1:])
+
     # also save best exoert rollout
-    save_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
+    save_dir = config["data_dir"] / \
+        config["env_name"] / config["offset"] / "rd2"
     pickle.dump(
         output[0],
-        open(save_dir / f"processed_expert_{config['ft_window_size']}_best.pkl", "wb"),
+        open(save_dir /
+             f"processed_{reformatted_name}_{config['ft_window_size']}_best.pkl", "wb"),
     )
 
     print(
         f"\n>>>>> finished processing, please check this directory for output: {save_dir}\n"
     )
-

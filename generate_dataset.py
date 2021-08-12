@@ -14,6 +14,9 @@ def parse_args():
         "--config", type=str, required=True, help="path of configuration file",
     )
     parser.add_argument(
+        "--name", type=str, default="raw_expert", help="name of raw expert rollout .pkl & .csv file",
+    )
+    parser.add_argument(
         "--split-only",
         type=bool,
         default=False,
@@ -24,9 +27,14 @@ def parse_args():
     return args
 
 
-def generate_dataset(config: dict, split_only: bool = False) -> None:
+def generate_dataset(config: dict, name: str or None=None, split_only: bool = False) -> None:
     # check env parameters in envs_launcher.py
     env = env_creator(None)
+
+    if name is None:
+        name = "raw_expert"
+    
+    reformatted_name = "_".join(name.split("_")[1:])
 
     # load and process expert demo
     expert_rollouts_path = (
@@ -34,7 +42,7 @@ def generate_dataset(config: dict, split_only: bool = False) -> None:
         / config["env_name"]
         / config["offset"]
         / "rd2"
-        / f"processed_expert_{config['ft_window_size']}.pkl"
+        / f"processed_{reformatted_name}_{config['ft_window_size']}.pkl"
     )
     if not expert_rollouts_path.is_file():
         raise Exception(
@@ -80,4 +88,4 @@ if __name__ == "__main__":
 
     config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
 
-    generate_dataset(config, args.split_only)
+    generate_dataset(config, args.name, args.split_only)

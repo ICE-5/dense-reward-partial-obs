@@ -15,7 +15,7 @@ def prRed(skk):
 def plot_curves(
     x: list or np.ndarray, ys: dict, title: str, save_dir: str, save_name: str
 ) -> None:
-    fig = plt.figure(figsize=(10, 5))
+    fig = plt.figure(figsize=(7, 5))
     for label, y in ys.items():
         plt.plot(x, y, label=label, linewidth=1)
     plt.legend()
@@ -69,6 +69,39 @@ def vis_loss(loss_file: str or pathlib.Path, save_dir: str) -> None:
         title="Evaluation",
         save_dir=save_dir,
         save_name="eval_loss",
+    )
+
+    plot_curves(
+        x=x,
+        ys={
+            "train": train_recon_loss,
+            "eval": eval_recon_loss,
+        },
+        title="Reconstruction Loss",
+        save_dir=save_dir,
+        save_name=f"recon_loss",
+    )
+
+    plot_curves(
+        x=x,
+        ys={
+            "train": train_cmp_loss,
+            "eval": eval_cmp_loss,
+        },
+        title="Comparison Loss",
+        save_dir=save_dir,
+        save_name=f"cmp_loss",
+    )
+
+    plot_curves(
+        x=x,
+        ys={
+            "train": train_loss,
+            "eval": eval_loss,
+        },
+        title="Combined Loss",
+        save_dir=save_dir,
+        save_name=f"combined_loss",
     )
 
 if __name__ == '__main__':
