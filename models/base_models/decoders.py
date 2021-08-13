@@ -49,22 +49,16 @@ class FtDecoder(nn.Module):
     input: n*z_dim
     """
     super().__init__()
+    self.z_dim = z_dim
 
     self.ft_decoder = nn.Sequential(
-      nn.ConvTranspose1d(z_dim, 64, kernel_size=2, stride=1), # input n*z_dim*1
-      nn.Dropout(0.5),
+      nn.Linear(self.z_dim, 128),
       nn.LeakyReLU(0.1, inplace=True),
-      nn.ConvTranspose1d(64, 32, kernel_size=2, stride=4), # input n*z_dim*2
-      # nn.ConvTranspose1d(64, 32, kernel_size=2, stride=2), # input n*z_dim*2
-      nn.Dropout(0.5),
+      nn.Linear(128, 128),
       nn.LeakyReLU(0.1, inplace=True),
-      nn.ConvTranspose1d(32, 16, kernel_size=2, stride=4), # input n*z_dim*4
-      # nn.ConvTranspose1d(32, 16, kernel_size=2, stride=2), # input n*z_dim*4
-      nn.Dropout(0.5),
+      nn.Linear(128, 64),
       nn.LeakyReLU(0.1, inplace=True),
-      nn.ConvTranspose1d(16, 6, kernel_size=1, stride=3), # input n*z_dim*8
-      # nn.ConvTranspose1d(16, 6, kernel_size=1, stride=1), # input n*z_dim*8
-      nn.Dropout(0.5),
+      nn.Linear(64, 48),
       nn.LeakyReLU(0.1, inplace=True),
     )
 
@@ -72,8 +66,8 @@ class FtDecoder(nn.Module):
       init_weights(self.modules())
 
   def forward(self, z):
-    z = z.unsqueeze(2)
-    return self.ft_decoder(z)
+    ft = self.ft_decoder(z)
+    return ft.reshape([-1, 6, 8])
 
 
 class ImageDecoder(nn.Module):

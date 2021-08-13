@@ -95,26 +95,26 @@ class DenseRewardPartialObs:
             for batch_sample in train_dataloader:
                 self.model.train(True)
                 iters += 1
-                data_a, data_b, data_g = (
+                data_a, data_b = (
                     batch_sample["a_obs"],
                     batch_sample["b_obs"],
-                    batch_sample["goal_obs"],
+                    # batch_sample["goal_obs"],
                 )
 
                 if self.device.type == "cuda":
-                    data_a, data_b, data_g = (
+                    data_a, data_b = (
                         to_cuda(data_a),
                         to_cuda(data_b),
-                        to_cuda(data_g),
+                        # to_cuda(data_g),
                     )
 
                 optimizer.zero_grad()
-                z_a, decoded_a = self.model(data_a)
-                z_b, decoded_b = self.model(data_b)
-                z_g, _ = self.model(data_g)
+                z_a, delta_z_a, decoded_a = self.model(data_a)
+                z_b, delta_z_b, decoded_b = self.model(data_b)
+                # z_g, _, _ = self.model(data_g)
 
                 loss, recon_loss, cmp_loss = self.model.compute_loss(
-                    data_a, decoded_a, z_a, data_b, decoded_b, z_b, z_g
+                    data_a, decoded_a, z_a, delta_z_a, data_b, decoded_b, z_b, delta_z_b
                 )
 
                 # write to tensorboard
@@ -130,30 +130,30 @@ class DenseRewardPartialObs:
 
                     test_losses, test_recon_losses, test_cmp_losses = [], [], []
                     for batch_sample in test_dataloader:
-                        data_a, data_b, data_g = (
+                        data_a, data_b = (
                             batch_sample["a_obs"],
                             batch_sample["b_obs"],
-                            batch_sample["goal_obs"],
+                            # batch_sample["goal_obs"],
                         )
 
                         if self.device.type == "cuda":
-                            data_a, data_b, data_g = (
+                            data_a, data_b = (
                                 to_cuda(data_a),
                                 to_cuda(data_b),
-                                to_cuda(data_g),
+                                # to_cuda(data_g),
                             )
 
                         with torch.no_grad():
-                            z_a, decoded_a = self.model(data_a)
-                            z_b, decoded_b = self.model(data_b)
-                            z_g, _ = self.model(data_g)
+                            z_a, delta_z_a, decoded_a = self.model(data_a)
+                            z_b, delta_z_b, decoded_b = self.model(data_b)
+                            # z_g, _ = self.model(data_g)
 
                             (
                                 test_loss,
                                 test_recon_loss,
                                 test_cmp_loss,
                             ) = self.model.compute_loss(
-                                data_a, decoded_a, z_a, data_b, decoded_b, z_b, z_g
+                                data_a, decoded_a, z_a, data_b, decoded_b, z_b,
                             )
                             test_losses.append(test_loss.item())
                             test_recon_losses.append(test_recon_loss.item())

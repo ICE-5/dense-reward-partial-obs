@@ -44,29 +44,22 @@ class FtEncoder(nn.Module):
     self.z_dim = z_dim
 
     self.ft_encoder = nn.Sequential(
-      CausalConv1D(6, 16, kernel_size=2, stride=4),
-      # CausalConv1D(6, 16, kernel_size=2, stride=2),
-      # nn.Dropout(0.5),
+      nn.Linear(48, 64),
       nn.LeakyReLU(0.1, inplace=True),
-      CausalConv1D(16, 32, kernel_size=2, stride=4),
-      # CausalConv1D(16, 32, kernel_size=2, stride=2),
-      # nn.Dropout(0.5),
+      nn.Linear(64, 128),
       nn.LeakyReLU(0.1, inplace=True),
-      CausalConv1D(32, 64, kernel_size=2, stride=4),
-      # CausalConv1D(32, 64, kernel_size=2, stride=2),
-      # nn.Dropout(0.5),
+      nn.Linear(128, 128),
       nn.LeakyReLU(0.1, inplace=True),
-      CausalConv1D(64, self.z_dim, kernel_size=2, stride=1),
-      # nn.Dropout(0.5),
+      nn.Linear(128, self.z_dim),
       nn.LeakyReLU(0.1, inplace=True),
     )
 
     if initailize_weights:
       init_weights(self.modules())
 
-  def forward(self, force):
-    return self.ft_encoder(force).squeeze(2)
-    # return self.ft_encoder(force).reshape([-1, 64])
+  def forward(self, ft):
+    ft = ft.reshape([-1, 48])
+    return self.ft_encoder(ft)
 
 
 class ImageEncoder(nn.Module):
