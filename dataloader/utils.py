@@ -51,6 +51,10 @@ class FTWindow:
         except ValueError:
             print("invalid update, check dimension of new_ft")
 
+    def rollback(self,) -> None:
+        self.window[:-1, :] = self.window[1:, :]
+        self.window[-1, :] = 0.0
+
     def insert(self, new_ft: np.ndarray or list, index: int) -> None:
         try:
             self.window[index, :] = new_ft
@@ -73,7 +77,7 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
         dict: processed observation, key being name of used sensors, also including depth
     """
     rollout_name, depth_name, sample_name = sample_code.split(".")
-    depth = parse_depth(sample_code)
+    timestep = int(sample_name[1:])
 
     dataset_dir = (
         config["data_dir"]
@@ -90,7 +94,7 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
             raw_obs[sensor] = pickle.load(f)[sample_name]
 
     obs = process_raw_sample_obs(config, raw_obs)
-    obs["depth"] = float(depth)
+    obs["depth"] = float(timestep)
 
     return obs
 

@@ -6,7 +6,7 @@ import gym
 from abc import ABC, abstractmethod
 from numpy.linalg import norm
 
-class BackwardSampler(ABC):
+class Sampler(ABC):
     def __init__(
         self,
         config: dict,
@@ -21,13 +21,19 @@ class BackwardSampler(ABC):
         self.output_dir = output_dir
 
         self.num_seeds = config["num_seeds"]
-        self.num_samples = config["num_samples"]
         self.control_rate = config["control_rate"]
+        self.num_branches = config["num_branches"]
         self.use_history = config["use_history"]
+
+        self.num_steps_per_branch = config["num_steps_per_branch"]
 
         self.num_rollbacks_per_trial = config["num_rollbacks_per_trial"]
         self.restore_threshold = config["restore_threshold"]
         self.num_rollbacks_final_trial = config["num_rollbacks_final_trial"]
+
+        self.pair_codes = []
+        self.train_pair_codes = []
+        self.test_pair_codes = []
 
         self.sample_codes = []
         self.train_sample_codes = []
@@ -54,6 +60,16 @@ class BackwardSampler(ABC):
                 print("sample codes not found")
         else:
             existing_sample_codes = self.sample_codes
+        
+        if len(self.pair_codes) == 0:
+            try:
+                with open(self.output_dir / "pair_codes.pkl", "rb") as f:
+                    existing_pair_codes = pickle.load(f)
+            except Exception:
+                print("sample codes not found")
+        else:
+            existing_pair_codes = self.pair_codes
+
 
         train_sample_codes = [
             code
@@ -65,13 +81,36 @@ class BackwardSampler(ABC):
             for code in existing_sample_codes
             if code.split(".")[0] not in train_rollout_names
         ]
-        print(train_sample_codes)
-        print(test_sample_codes)
+
+        train_pair_codes = [
+            pair
+            for pair in existing_pair_codes
+            if pair[0].split(".")[0] in train_rollout_names
+        ]
+        test_pair_codes = [
+            pair
+            for pair in existing_pair_codes
+            if pair[0].split(".")[0] not in train_rollout_names
+        ]
+
+        # DEBUG
+        # print(train_sample_codes)
+        # print(test_sample_codes)
+        # print(train_pair_codes)
+        # print(test_pair_codes)
+
+
         pickle.dump(
             train_sample_codes, open(self.output_dir / "train_sample_codes.pkl", "wb"),
         )
         pickle.dump(
             test_sample_codes, open(self.output_dir / "test_sample_codes.pkl", "wb"),
+        )
+        pickle.dump(
+            train_pair_codes, open(self.output_dir / "train_pair_codes.pkl", "wb"),
+        )
+        pickle.dump(
+            test_pair_codes, open(self.output_dir / "test_pair_codes.pkl", "wb"),
         )
     
     def _restore_env_to_timestep(

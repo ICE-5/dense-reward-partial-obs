@@ -3,8 +3,9 @@ import argparse
 import pathlib
 import pickle
 
-from samplers.naive_backward_sampler import NaiveBackwardSampler
-from samplers.temporal_variant_backward_sampler import TemporalVariantBackwardSampler
+# from samplers.naive_backward_sampler import NaiveBackwardSampler
+# from samplers.temporal_variant_backward_sampler import TemporalVariantBackwardSampler
+from samplers.temporal_variant_forward_sampler import TemporalVariantForwardSampler
 from envs.envs_launcher import env_creator
 
 
@@ -14,7 +15,10 @@ def parse_args():
         "--config", type=str, required=True, help="path of configuration file",
     )
     parser.add_argument(
-        "--name", type=str, default="raw_expert", help="name of raw expert rollout .pkl & .csv file",
+        "--name",
+        type=str,
+        default="raw_expert",
+        help="name of raw expert rollout .pkl & .csv file",
     )
     parser.add_argument(
         "--split-only",
@@ -27,13 +31,15 @@ def parse_args():
     return args
 
 
-def generate_dataset(config: dict, name: str or None=None, split_only: bool = False) -> None:
+def generate_dataset(
+    config: dict, name: str or None = None, split_only: bool = False
+) -> None:
     # check env parameters in envs_launcher.py
     env = env_creator(None)
 
     if name is None:
         name = "raw_expert"
-    
+
     reformatted_name = "_".join(name.split("_")[1:])
 
     # load and process expert demo
@@ -68,10 +74,7 @@ def generate_dataset(config: dict, name: str or None=None, split_only: bool = Fa
 
     print(f"\n>>>>> using sampler: {config['sampler']}\n")
     sampler = eval(config["sampler"])(
-        config,
-        env=env,
-        expert_rollouts=expert_rollouts,
-        output_dir=output_dir,
+        config, env=env, expert_rollouts=expert_rollouts, output_dir=output_dir,
     )
 
     # sample and split
