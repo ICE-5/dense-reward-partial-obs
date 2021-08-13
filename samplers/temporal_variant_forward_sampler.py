@@ -142,8 +142,8 @@ class TemporalVariantForwardSampler(Sampler):
                                 next_t_name = f"T{(inbranch_t+1):03d}"
                                 self.pair_codes.append(
                                     (
-                                        f"{rollout_name},{branch_name},{curr_t_name}",
-                                        f"{rollout_name},{branch_name},{next_t_name}",
+                                        f"{rollout_name}.{branch_name}.{curr_t_name}",
+                                        f"{rollout_name}.{branch_name}.{next_t_name}",
                                     )
                                 )
 

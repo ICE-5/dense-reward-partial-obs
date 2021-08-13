@@ -1,7 +1,7 @@
 # env
 env_name: "lap-joint"
 offset: "0mm"
-dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NS10_CR5"
+dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NB5_CR5"
 sensor_used_in_sampling: ["ft", "depthmap"]
 
 # FT sample
@@ -16,7 +16,7 @@ num_expert_rollouts: 2                                # number of expert rollout
 num_seeds: 1                                          # <SET TO 1> number of seed to use for generating samples at each depth
 num_samples: 10
 num_branches: 5                                       # number of samples to generate at each depth
-num_steps_per_branch: 12
+num_steps_per_branch: 15
 control_rate: 5                                       # interval (in terms of timesteps) to create a depth
 stop_sampling_threshold: 0.5                          # [NAIVE BACKWARD SAMPLER ONLY] threshold to control the end of sampling
 train_test_split: 0.5
@@ -35,8 +35,8 @@ control_angle_mid: 85
 # network config
 ft_z_dim: 64
 depthmap_z_dim: 64
-z_dim: 128                                            # try 48
-sensor_used_in_model: ["ft", ]                                 # "depthmap" / "ft" / TBA
+z_dim: 48                                            # try 48
+sensor_used_in_model: ["ft","depthmap"]               # "depthmap" / "ft" / TBA
 
 # training
 initialize_weights: True
