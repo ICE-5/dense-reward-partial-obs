@@ -77,10 +77,10 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
         dict: processed observation, key being name of used sensors, also including depth
     """
     try:
-        rollout_name, depth_name, sample_name = sample_code.split(".")
+        rollout_name, branch_name, timestep_name = sample_code.split(".")
     except Exception:
         print(sample_code)
-    timestep = int(sample_name[1:])
+    timestep = int(timestep_name[1:])
 
     dataset_dir = (
         config["data_dir"]
@@ -92,12 +92,12 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
     raw_obs = {}
     for sensor in config["sensor_used_in_model"]:
         with open(
-            dataset_dir / rollout_name / depth_name / f"{sensor}.pkl", "rb",
+            dataset_dir / rollout_name / branch_name / f"{sensor}.pkl", "rb",
         ) as f:
-            raw_obs[sensor] = pickle.load(f)[sample_name]
+            raw_obs[sensor] = pickle.load(f)[timestep_name]
 
     obs = process_raw_sample_obs(config, raw_obs)
-    obs["depth"] = float(timestep)
+    # obs["depth"] = float(timestep)
 
     return obs
 

@@ -1,7 +1,7 @@
 # env
 env_name: "lap-joint"
 offset: "0mm"
-dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NS10_CR5"
+dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NB3_CR100"
 sensor_used_in_sampling: ["ft", "depthmap"]
 
 # FT sample
