@@ -1,0 +1,60 @@
+# env
+env_name: "lap-joint"
+offset: "0mm"
+dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NS10_CR5"
+sensor_used_in_sampling: ["ft", "depthmap"]
+
+# FT sample
+ft_window_size: 8                                     # number of frame to concatenate into one observation
+left_append: True                                     # if true, left in right out, else, right in left out
+
+# sampler
+# NaiveBackwardSampler / TemporalVariantBackwardSampler
+# sampler: "NaiveBackwardSampler"                       
+sampler: "TemporalVariantForwardSampler"             
+num_expert_rollouts: 2                                # number of expert rollouts used to perform backward sampling
+num_seeds: 1                                          # <SET TO 1> number of seed to use for generating samples at each depth
+num_samples: 10
+num_branches: 5                                       # number of samples to generate at each depth
+num_steps_per_branch: 12
+control_rate: 5                                       # interval (in terms of timesteps) to create a depth
+stop_sampling_threshold: 0.5                          # [NAIVE BACKWARD SAMPLER ONLY] threshold to control the end of sampling
+train_test_split: 0.5
+
+# control sampling rollback (no need to change normally)
+num_rollbacks_per_trial: 3
+restore_threshold: 0.000005
+num_rollbacks_final_trial: 15
+
+# specific to temporal variant sampler
+use_history: False
+control_angle_goal: 15
+control_angle_start: 45
+control_angle_mid: 85
+
+# network config
+ft_z_dim: 64
+depthmap_z_dim: 64
+z_dim: 128                                            # try 48
+sensor_used_in_model: ["ft", ]                                 # "depthmap" / "ft" / TBA
+
+# training
+initialize_weights: True
+batch_size: 64
+num_workers: 0
+lr: 0.0003
+weight_decay: 0.000005
+num_iters: 1000000
+log_freq: 200
+save_freq: 200
+
+# loss
+depth_margin: 2
+within_threshold: 0.04
+outside_threshold: 0.04
+reconstruction_lambda: 0.2
+comparison_lambda: 10.0
+
+# GPU
+use_gpu: False
+

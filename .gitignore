@@ -8,6 +8,8 @@ checkpoints/
 configs/*
 !configs/template.yaml
 !configs/debug.yaml
+!configs/template_delta.yaml
+!configs/debug_delta.yaml
 data/
 !data/lap-joint/0mm/rd2/rd2_pybullet_checkpoints/*
 debug/
