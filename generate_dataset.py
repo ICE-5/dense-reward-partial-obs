@@ -17,8 +17,8 @@ def parse_args():
     parser.add_argument(
         "--name",
         type=str,
-        default="raw_expert",
-        help="name of raw expert rollout .pkl & .csv file",
+        default="processed_expert_fd_8",
+        help="name of the processed expert rollout .pkl file",
     )
     parser.add_argument(
         "--split-only",
@@ -38,9 +38,9 @@ def generate_dataset(
     env = env_creator(None)
 
     if name is None:
-        name = "raw_expert"
-
-    reformatted_name = "_".join(name.split("_")[1:])
+        raise ValueError("please specify the name of processed expert rollout file")
+    else:
+        name = pathlib.Path(name).stem
 
     # load and process expert demo
     expert_rollouts_path = (
@@ -48,14 +48,15 @@ def generate_dataset(
         / config["env_name"]
         / config["offset"]
         / "rd2"
-        / f"processed_{reformatted_name}_{config['ft_window_size']}.pkl"
+        / f"{name}.pkl"
     )
     if not expert_rollouts_path.is_file():
-        raise Exception(
-            "Missing processed expert rollouts, please run process_rollouts.py first"
+        raise FileNotFoundError(
+            "Missing processed expert rollouts, try run process_rollouts.py first"
         )
     with open(expert_rollouts_path, "rb") as f:
         expert_rollouts = pickle.load(f)
+
     num_expert_rollouts = (
         config["num_expert_rollouts"]
         if config["num_expert_rollouts"] < len(expert_rollouts)

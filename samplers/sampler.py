@@ -20,6 +20,8 @@ class Sampler(ABC):
         self.expert_rollouts = expert_rollouts
         self.output_dir = output_dir
 
+        self.sensors = config["sensor_used_in_sampling"]
+
         self.num_seeds = config["num_seeds"]
         self.control_rate = config["control_rate"]
         self.num_branches = config["num_branches"]
@@ -66,7 +68,7 @@ class Sampler(ABC):
                 with open(self.output_dir / "pair_codes.pkl", "rb") as f:
                     existing_pair_codes = pickle.load(f)
             except Exception:
-                print("sample codes not found")
+                print("pair codes not found")
         else:
             existing_pair_codes = self.pair_codes
 
@@ -92,12 +94,6 @@ class Sampler(ABC):
             for pair in existing_pair_codes
             if pair[0].split(".")[0] not in train_rollout_names
         ]
-
-        # DEBUG
-        # print(train_sample_codes)
-        # print(test_sample_codes)
-        # print(train_pair_codes)
-        # print(test_pair_codes)
 
 
         pickle.dump(
@@ -161,14 +157,14 @@ class Sampler(ABC):
 
                 if delta_ft < self.restore_threshold:
                     self.prGreen(
-                        f"RESTORE TIMESTEP {timestep:3d} SUCCESSFULLY WITH {num_rollbacks} ROLLBACKS"
+                        f"SUCCESS | restore F/T timestep {timestep:4d} with {num_rollbacks:4d} steps of rollback"
                     )
                     tried_num_rollbacks = num_rollbacks
                     break
 
                 if exhaust:
                     tried_num_rollbacks = timestep + 1
-                    self.prRed(f"RESTORE FAILED FOR TIMESTEP {timestep}, PLEASE DEBUG!")
+                    self.prRed(f"FAILURE | restore F/T failed for timestep {timestep:4d}")
                     break
 
                 fold += 1

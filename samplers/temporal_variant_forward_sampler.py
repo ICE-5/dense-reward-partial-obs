@@ -19,7 +19,7 @@ class TemporalVariantForwardSampler(Sampler):
         config: dict,
         env: gym.Env,
         expert_rollouts: list,
-        output_dir: pathlib.Path,
+        output_dir: str or pathlib.Path,
     ) -> None:
         super().__init__(
             config=config,
@@ -36,7 +36,6 @@ class TemporalVariantForwardSampler(Sampler):
                 (0.5, np.cos(config["control_angle_mid"] * np.pi / 180)),
             ],
         )
-        self.pair_codes = []
 
     def sample(self):
         # empty output directory before sampling
@@ -57,40 +56,43 @@ class TemporalVariantForwardSampler(Sampler):
                 pathlib.Path(self.output_dir) / rollout_name / expert_branch_name
             )
             expert_branch_path.mkdir(parents=True, exist_ok=False)
-            expert_branch_ft, expert_branch_depthmap = {}, {}
 
-            for t in range(rollout_length - 1):
-                curr_t_name = f"T{t:03d}"
-                next_t_name = f"T{(t+1):03d}"
-                self.pair_codes.append(
-                    (
-                        f"{rollout_name}.{expert_branch_name}.{curr_t_name}",
-                        f"{rollout_name}.{expert_branch_name}.{next_t_name}",
+            for sensor in self.sensors:
+                globals()[f"expert_branch_{sensor}"] = {}
+
+            for t in tqdm(
+                range(rollout_length),
+                f"Sampling progress for expert rollout #{rollout_idx}: ",
+            ):
+                expert_curr_t_name = f"T{t:03d}"
+                expert_next_t_name = f"T{(t+1):03d}"
+
+                if t < rollout_length - 1:
+                    self.pair_codes.append(
+                        (
+                            f"{rollout_name}.{expert_branch_name}.{expert_curr_t_name}",
+                            f"{rollout_name}.{expert_branch_name}.{expert_next_t_name}",
+                        )
                     )
-                )
                 self.sample_codes.append(
-                    f"{rollout_name}.{expert_branch_name}.{curr_t_name}"
+                    f"{rollout_name}.{expert_branch_name}.{expert_curr_t_name}"
                 )
-
-                if t == rollout_length - 2:
-                    expert_branch_ft[next_t_name] = rollout[t + 1].obs["ft"]
-                    expert_branch_depthmap[next_t_name] = rollout[t + 1].obs["depthmap"]
-                    self.sample_codes.append(
-                        f"{rollout_name}.{expert_branch_name}.{next_t_name}"
-                    )
-                expert_branch_ft[curr_t_name] = rollout[t].obs["ft"]
-                expert_branch_depthmap[curr_t_name] = rollout[t].obs["depthmap"]
+                for sensor in self.sensors:
+                    eval(f"expert_branch_{sensor}")[expert_curr_t_name] = rollout[
+                        t
+                    ].obs[sensor]
 
                 if t in sampling_timesteps:
-
-                    depth = sampling_timesteps.index(t)
+                    d = sampling_timesteps.index(t)
                     for b in range(self.num_branches):
-                        branch_name = f"D{depth:03d}-B{b:03d}"
+                        branch_name = f"D{d:03d}-B{b:03d}"
                         branch_path = (
                             pathlib.Path(self.output_dir) / rollout_name / branch_name
                         )
                         branch_path.mkdir(parents=True, exist_ok=False)
-                        branch_ft, branch_depthmap = {}, {}
+
+                        for sensor in self.sensors:
+                            globals()[f"branch_{sensor}"] = {}
 
                         # restore state to t
                         if b == 0:
@@ -108,7 +110,7 @@ class TemporalVariantForwardSampler(Sampler):
                                 success_num_rollbacks=success_num_rollbacks,
                             )
 
-                        inbranch_t = t
+                        interior_t = t
                         cmp_action = rollout[t].action * 0.0
 
                         ftw = FTWindow(
@@ -116,30 +118,28 @@ class TemporalVariantForwardSampler(Sampler):
                         )
 
                         for i in range(self.num_steps_per_branch):
-                            inbranch_t += 1
-                            progress = inbranch_t / rollout_length
+                            interior_t += 1
+
+                            if interior_t > rollout_length - 1:
+                                break
+
+                            curr_t_name = f"T{interior_t:03d}"
+                            next_t_name = f"T{(interior_t+1):03d}"
+
+                            progress = interior_t / rollout_length
                             alpha = self.alpha_solver.get_alpha(progress)
 
                             if self.use_history:
-                                cmp_action += rollout[inbranch_t].action
+                                cmp_action += rollout[interior_t].action
                             else:
-                                cmp_action = rollout[inbranch_t].action
-
+                                cmp_action = rollout[interior_t].action
                             action = self._sample_action_with_control(
                                 cmp_action=cmp_action, alpha=alpha,
                             )
                             ft, _, _, info = self.env.step(action)
                             ftw.update(ft)
-                            branch_ft[inbranch_t] = copy.deepcopy(ftw.window)
-                            branch_depthmap[inbranch_t] = info["depthmap"]
-
-                            self.sample_codes.append(
-                                f"{rollout_name}.{branch_name}.{curr_t_name}"
-                            )
 
                             if i < self.num_steps_per_branch - 1:
-                                curr_t_name = f"T{inbranch_t:03d}"
-                                next_t_name = f"T{(inbranch_t+1):03d}"
                                 self.pair_codes.append(
                                     (
                                         f"{rollout_name}.{branch_name}.{curr_t_name}",
@@ -147,32 +147,35 @@ class TemporalVariantForwardSampler(Sampler):
                                     )
                                 )
 
-                            if i == self.num_steps_per_branch - 1:
-                                self.sample_codes.append(
-                                    f"{rollout_name}.{branch_name}.{next_t_name}"
-                                )
+                            self.sample_codes.append(
+                                f"{rollout_name}.{branch_name}.{curr_t_name}"
+                            )
+                            for sensor in self.sensors:
+                                if sensor == "ft":
+                                    eval(f"branch_{sensor}")[
+                                        curr_t_name
+                                    ] = copy.deepcopy(ftw.window)
+                                else:
+                                    eval(f"branch_{sensor}")[curr_t_name] = info[sensor]
 
-                            if inbranch_t >= rollout_length - 1:
-                                break
+                        for sensor in self.sensors:
+                            pickle.dump(
+                                eval(f"branch_{sensor}"),
+                                open(branch_path / f"{sensor}.pkl", "wb"),
+                            )
 
-                        pickle.dump(
-                            branch_ft, open(branch_path / "ft.pkl", "wb"),
-                        )
-
-                        pickle.dump(
-                            branch_depthmap, open(branch_path / "depthmap.pkl", "wb"),
-                        )
-                pickle.dump(
-                    expert_branch_ft, open(expert_branch_path / "ft.pkl", "wb"),
-                )
-
-                pickle.dump(
-                    expert_branch_depthmap,
-                    open(expert_branch_path / "depthmap.pkl", "wb"),
-                )
+                for sensor in self.sensors:
+                    pickle.dump(
+                        eval(f"expert_branch_{sensor}"),
+                        open(expert_branch_path / f"{sensor}.pkl", "wb"),
+                    )
 
         pickle.dump(
             self.pair_codes, open(self.output_dir / "pair_codes.pkl", "wb"),
+        )
+
+        pickle.dump(
+            self.sample_codes, open(self.output_dir / "sample_codes.pkl", "wb"),
         )
 
     def _sample_action_with_control(
