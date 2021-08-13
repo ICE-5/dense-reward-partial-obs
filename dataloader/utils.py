@@ -76,7 +76,10 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
     Returns:
         dict: processed observation, key being name of used sensors, also including depth
     """
-    rollout_name, depth_name, sample_name = sample_code.split(".")
+    try:
+        rollout_name, depth_name, sample_name = sample_code.split(".")
+    except Exception:
+        print(sample_code)
     timestep = int(sample_name[1:])
 
     dataset_dir = (
