@@ -153,7 +153,7 @@ class DenseRewardPartialObs:
                                 test_recon_loss,
                                 test_cmp_loss,
                             ) = self.model.compute_loss(
-                                data_a, decoded_a, z_a, data_b, decoded_b, z_b,
+                                data_a, decoded_a, z_a, delta_z_a, data_b, decoded_b, z_b, delta_z_b
                             )
                             test_losses.append(test_loss.item())
                             test_recon_losses.append(test_recon_loss.item())
