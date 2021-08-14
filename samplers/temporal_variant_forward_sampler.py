@@ -117,7 +117,7 @@ class TemporalVariantForwardSampler(Sampler):
                             initial_value=copy.deepcopy(rollout[t].obs["ft"])
                         )
 
-                        for i in range(self.num_steps_per_branch):
+                        for _ in range(self.num_steps_per_branch):
                             interior_t += 1
 
                             if interior_t > rollout_length - 1:
@@ -139,7 +139,7 @@ class TemporalVariantForwardSampler(Sampler):
                             ft, _, _, info = self.env.step(action)
                             ftw.update(ft)
 
-                            if i < self.num_steps_per_branch - 1:
+                            if interior_t < self.num_steps_per_branch - 1:
                                 self.pair_codes.append(
                                     (
                                         f"{rollout_name}.{branch_name}.{curr_t_name}",
