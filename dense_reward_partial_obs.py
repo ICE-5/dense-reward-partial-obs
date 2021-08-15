@@ -222,9 +222,9 @@ class DenseRewardPartialObs:
 
         if self.device.type == "cuda":
             obs_init = to_cuda(obs_init)
-            raw_obs_goal = to_cuda(obs_goal)
+            obs_goal = to_cuda(obs_goal)
 
-        self.model.test()
+        self.model.eval()
         with torch.no_grad():
             encoded_init, _ = self.model(obs_init)
             encoded_goal, _ = self.model(obs_goal)
@@ -238,7 +238,7 @@ class DenseRewardPartialObs:
         if self.device.type == "cuda":
             obs = to_cuda(obs)
 
-        self.model.test()
+        self.model.eval()
         with torch.no_grad():
             encoded, _ = self.model(obs)
             z, _ = encoded

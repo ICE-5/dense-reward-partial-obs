@@ -63,7 +63,7 @@ class FtEncoderLSTM(nn.Module):
         # shape efore piping into LSTM: [batch_size, ft_window_size, 6]
         _, (out, _) = self.encoder(x)
         # output should be [batch_size, z_dim]
-        return out.squeeze()
+        return out.squeeze(0)
 
 
 class ImageEncoder(nn.Module):

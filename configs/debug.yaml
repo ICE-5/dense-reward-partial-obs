@@ -5,7 +5,7 @@ dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NB3_CR100"
 sensor_used_in_sampling: ["ft", "depthmap"]
 
 # GPU
-use_gpu: False                                        # set to True during training dense reward, set to False when doing inference in RD2 training
+use_gpu: True                                         # set to True during training dense reward, set to False when doing inference in RD2 training
 
 # FT sample
 ft_window_size: 8                                     # number of frame to concatenate into one observation

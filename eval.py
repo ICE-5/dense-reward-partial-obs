@@ -49,7 +49,8 @@ def eval_rollout(model: DenseRewardPartialObs, rollout: list) -> tuple:
         dense_rewards.append(dense_reward)
         dist_rewards.append(dist_reward)
 
-        if step % 50 == 0:
+        # if step % 100 == 0 or step == len(rollout) - 1:
+        if step == len(rollout) - 1:
             print(
                 f"step: {step:5d},\trolllout length: {len(rollout)}\tdistance reward: {dist_reward:5f},\tdense reward: {dense_reward:5f}"
             )
