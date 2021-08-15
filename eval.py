@@ -14,9 +14,21 @@ from dense_reward_partial_obs import DenseRewardPartialObs
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config", type=str, required=True, help="path of configuration file",
+        "-c",
+        "--config",
+        type=str,
+        required=True,
+        help="path of configuration file, check configs/ for template ",
     )
     parser.add_argument(
+        "-n",
+        "--expert-rollouts-name",
+        type=str,
+        required=True,
+        help="name of expert rollouts, e.g., expert_fd",
+    )
+    parser.add_argument(
+        "-m",
         "--model-params-path",
         type=str,
         required=True,
@@ -52,25 +64,34 @@ if __name__ == "__main__":
 
     config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
 
-    rollout_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
+    storage_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
+    expert_rollouts_name = pathlib.Path(args.expert_rollouts_name).stem
 
     with open(
-        rollout_dir / f"processed_expert_{config['ft_window_size']}_best.pkl", "rb"
+        storage_dir
+        / f"processed_{expert_rollouts_name}_{config['ft_window_size']}_best.pkl",
+        "rb",
     ) as f:
         expert_rollout = pickle.load(f)
 
     # load successful rollout indices
-    with open(rollout_dir / "expert_raw.csv") as f:
+    with open(storage_dir / f"{expert_rollouts_name}.csv") as f:
         reader = csv.reader(f, delimiter=",")
         for row in reader:
             selected_rollout_indices = row
     succ_rollout_indices = [int(x) for x in selected_rollout_indices]
 
     # prepare rollouts for eval
-    rollouts = process_rollouts(config, sort_by_length=False)
+    rollouts = process_rollouts(
+        config,
+        raw_expert_rollouts_path=storage_dir / f"{expert_rollouts_name}.pkl",
+        sort_by_length=False,
+    )
 
     # load model
-    drpo = DenseRewardPartialObs(config=config, model_params_path=args.model_params_path)
+    drpo = DenseRewardPartialObs(
+        config=config, model_params_path=args.model_params_path
+    )
     drpo.set_expert_demo(expert_rollout=expert_rollout)
 
     save_dir = pathlib.Path("media") / drpo.model_id / "vis_reward"
@@ -94,4 +115,3 @@ if __name__ == "__main__":
             title=f"rollout #{i} {name}",
             save_name=f"rollout_{i}_{name}",
         )
-

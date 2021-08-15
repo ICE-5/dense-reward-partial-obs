@@ -7,18 +7,24 @@ import pickle
 # from samplers.temporal_variant_backward_sampler import TemporalVariantBackwardSampler
 from samplers.temporal_variant_forward_sampler import TemporalVariantForwardSampler
 from envs.envs_launcher import env_creator
+from utils import prGreen, prYellow
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config", type=str, required=True, help="path of configuration file",
-    )
-    parser.add_argument(
-        "--name",
+        "-c",
+        "--config",
         type=str,
         required=True,
-        help="name of the processed expert rollout .pkl file",
+        help="path of configuration file, check configs/ for template ",
+    )
+    parser.add_argument(
+        "-n",
+        "--expert-rollouts-name",
+        type=str,
+        required=True,
+        help="name of expert rollouts, e.g., expert_fd",
     )
     parser.add_argument(
         "--split-only",
@@ -32,15 +38,17 @@ def parse_args():
 
 
 def generate_dataset(
-    config: dict, name: str or None = None, split_only: bool = False
+    config: dict, expert_rollouts_name: str or None = None, split_only: bool = False
 ) -> None:
     # check env parameters in envs_launcher.py
     env = env_creator(None)
 
-    if name is None:
+    if expert_rollouts_name is None:
         raise ValueError("please specify the name of processed expert rollout file")
     else:
-        name = pathlib.Path(name).stem
+        expert_rollouts_name = pathlib.Path(expert_rollouts_name).stem
+        if "processed" in expert_rollouts_name:
+            expert_rollouts_name = "_".join(expert_rollouts_name.split("_")[1:])
 
     # load and process expert demo
     expert_rollouts_path = (
@@ -48,7 +56,7 @@ def generate_dataset(
         / config["env_name"]
         / config["offset"]
         / "rd2"
-        / f"{name}.pkl"
+        / f"processed_{expert_rollouts_name}_{config['ft_window_size']}.pkl"
     )
     if not expert_rollouts_path.is_file():
         raise FileNotFoundError(
@@ -73,7 +81,7 @@ def generate_dataset(
     )
     pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    print(f"\n>>>>> using sampler: {config['sampler']}\n")
+    prYellow(f"\nINITIATED | using sampler: {config['sampler']}\n")
     sampler = eval(config["sampler"])(
         config, env=env, expert_rollouts=expert_rollouts, output_dir=output_dir,
     )
@@ -92,4 +100,4 @@ if __name__ == "__main__":
 
     config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
 
-    generate_dataset(config, args.name, args.split_only)
+    generate_dataset(config, args.expert_rollouts_name, args.split_only)

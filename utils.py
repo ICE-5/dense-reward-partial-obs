@@ -11,6 +11,9 @@ def prGreen(skk):
 def prRed(skk):
     print("\033[91m {}\033[00m" .format(skk))
 
+def prYellow(skk):
+    print("\033[33m {}\033[00m" .format(skk))
+
 
 def plot_curves(
     x: list or np.ndarray, ys: dict, title: str, save_dir: str, save_name: str

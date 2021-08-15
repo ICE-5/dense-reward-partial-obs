@@ -42,7 +42,7 @@ class PatialObsDataset(Dataset):
 if __name__ == "__main__":
 
     config_path = (
-        pathlib.Path(__file__).resolve().parent.parent / "configs" / "debug_delta.yaml"
+        pathlib.Path(__file__).resolve().parent.parent / "configs" / "debug.yaml"
     )
     with open(config_path) as f:
         config = yaml.safe_load(f)

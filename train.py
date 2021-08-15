@@ -9,7 +9,11 @@ from dense_reward_partial_obs import DenseRewardPartialObs
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--config", type=str, required=True, help="path of configuration file",
+        "-c",
+        "--config",
+        type=str,
+        required=True,
+        help="path of configuration file, check configs/ for template ",
     )
     parser.add_argument(
         "--model-params-path",
