@@ -34,17 +34,28 @@ def parse_args():
         required=True,
         help="path of model parameter .pt file",
     )
+    parser.add_argument(
+        "--use-delta",
+        type=bool,
+        default=False,
+        required=False,
+        help="whether to use delta hidden state to infer reward",
+    )
 
     args = parser.parse_args()
     return args
 
 
-def eval_rollout(model: DenseRewardPartialObs, rollout: list) -> tuple:
+def eval_rollout(model: DenseRewardPartialObs, rollout: list, use_delta: bool = False) -> tuple:
     dense_rewards, dist_rewards = [], []
 
     for step, sample in enumerate(rollout):
         raw_obs = sample.obs
-        dense_reward = model.predict_reward(raw_obs)
+
+        if use_delta and step == 0:
+            model.prev_delta_z_sum = 0.0
+
+        dense_reward = model.predict_reward(raw_obs, use_delta)
         dist_reward = sample.dist_reward
         dense_rewards.append(dense_reward)
         dist_rewards.append(dist_reward)
@@ -99,7 +110,7 @@ if __name__ == "__main__":
     save_dir.mkdir(parents=True, exist_ok=True)
 
     for i, rollout in enumerate(rollouts):
-        dense_rewards, dist_rewards = eval_rollout(drpo, rollout)
+        dense_rewards, dist_rewards = eval_rollout(drpo, rollout, args.use_delta)
         x = np.arange(len(rollout))
         ys = {}
         ys["dense reward"] = dense_rewards

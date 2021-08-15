@@ -22,7 +22,6 @@ class Sampler(ABC):
 
         self.sensors = config["sensor_used_in_sampling"]
 
-        self.num_seeds = config["num_seeds"]
         self.control_rate = config["control_rate"]
         self.num_branches = config["num_branches"]
         self.use_history = config["use_history"]

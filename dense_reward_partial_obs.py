@@ -46,6 +46,8 @@ class DenseRewardPartialObs:
         if model_params_path is not None:
             ckpt = torch.load(model_params_path)
             self.model.load_state_dict(ckpt["model_state_dict"])
+        
+        self.prev_delta_z_sum = 0.0
 
     def train(self,) -> None:
         # init logging service
@@ -233,7 +235,7 @@ class DenseRewardPartialObs:
             self.z_init = torch.squeeze(self.z_init)
             self.z_goal = torch.squeeze(self.z_goal)
 
-    def predict_reward(self, raw_obs: dict) -> float:
+    def predict_reward(self, raw_obs: dict, use_delta: bool = False) -> float:
         obs = process_raw_sample_obs(self.config, raw_obs, unsqueeze=True)
         if self.device.type == "cuda":
             obs = to_cuda(obs)
@@ -241,12 +243,20 @@ class DenseRewardPartialObs:
         self.model.eval()
         with torch.no_grad():
             encoded, _ = self.model(obs)
-            z, _ = encoded
+            z, delta_z = encoded
             z = torch.squeeze(z)
-
-            dist_s_g = 1.0 - torch.dot(self.z_goal, self.z_init)
+            delta_z = torch.squeeze(delta_z)
+        
+        if not use_delta:
             dist_pred_g = 1.0 - torch.dot(self.z_goal, z)
-            reward = 1.0 - dist_pred_g / dist_s_g
+            
+        else:
+            reconstructed_z = self.z_init + self.prev_delta_z_sum + delta_z
+            dist_pred_g = 1.0 - torch.dot(self.z_goal, reconstructed_z)
 
+        dist_s_g = 1.0 - torch.dot(self.z_goal, self.z_init)
+        reward = 1.0 - dist_pred_g / dist_s_g
+
+        self.prev_delta_z_sum += delta_z
         return reward.item()
 
