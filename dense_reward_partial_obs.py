@@ -19,7 +19,10 @@ class DenseRewardPartialObs:
     """
 
     def __init__(
-        self, config: dict, model_id: str or None = None, model_params: str = None
+        self,
+        config: dict,
+        model_id: str or None = None,
+        model_params_path: str or pathlib.Path = None,
     ) -> None:
         self.model_id = model_id
         self.config = config
@@ -31,17 +34,17 @@ class DenseRewardPartialObs:
         # try and parse model ID from model params path
         if model_id is None:
             try:
-                tmp_model_id = model_params.split("/")[-2]
+                tmp_model_id = pathlib.Path(model_params_path).parent.stem
                 if "-" in tmp_model_id:
                     self.model_id = tmp_model_id
             except Exception:
                 print(
                     ">>>>> please try to provide a model id for distinguishing logging and plotting"
                 )
-                self.model_id = "eval"
+                self.model_id = "test"
 
-        if model_params is not None:
-            ckpt = torch.load(model_params)
+        if model_params_path is not None:
+            ckpt = torch.load(model_params_path)
             self.model.load_state_dict(ckpt["model_state_dict"])
 
     def train(self,) -> None:
@@ -53,18 +56,19 @@ class DenseRewardPartialObs:
 
         # set up logging
         tb_writer = SummaryWriter(self.model_log_path)
-        csv_f = open(self.model_log_path / f"{self.model_id}.csv", "w")
-        csv_writer = csv.writer(csv_f)
-        csv_writer.writerow(
-            [
-                "train_loss",
-                "train_recon_loss",
-                "train_cmp_loss",
-                "test_loss",
-                "test_recon_loss",
-                "test_cmp_loss",
-            ]
-        )
+
+        with open(self.model_log_path / f"{self.model_id}.csv", "w") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [
+                    "train_loss",
+                    "train_recon_loss",
+                    "train_tmp_loss",
+                    "test_loss",
+                    "test_recon_loss",
+                    "test_tmp_loss",
+                ]
+            )
 
         # load data
         train_dataset = PatialObsDataset(self.config, phase="train")
@@ -95,83 +99,102 @@ class DenseRewardPartialObs:
             for batch_sample in train_dataloader:
                 self.model.train(True)
                 iters += 1
-                data_a, data_b = (
-                    batch_sample["a_obs"],
-                    batch_sample["b_obs"],
-                    # batch_sample["goal_obs"],
+                obs_curr, obs_next = (
+                    batch_sample["obs_curr"],
+                    batch_sample["obs_next"],
                 )
 
                 if self.device.type == "cuda":
-                    data_a, data_b = (
-                        to_cuda(data_a),
-                        to_cuda(data_b),
-                        # to_cuda(data_g),
+                    obs_curr, obs_next = (
+                        to_cuda(obs_curr),
+                        to_cuda(obs_next),
                     )
 
                 optimizer.zero_grad()
-                z_a, delta_z_a, decoded_a = self.model(data_a)
-                z_b, delta_z_b, decoded_b = self.model(data_b)
-                # z_g, _, _ = self.model(data_g)
+                encoded_curr, decoded_curr = self.model(obs_curr)
+                encoded_next, decoded_next = self.model(obs_next)
 
-                loss, recon_loss, cmp_loss = self.model.compute_loss(
-                    data_a, decoded_a, z_a, delta_z_a, data_b, decoded_b, z_b, delta_z_b
+                train_loss, train_recon_loss, train_tmp_loss = self.model.compute_loss(
+                    obs_curr=obs_curr,
+                    encoded_curr=encoded_curr,
+                    decoded_curr=decoded_curr,
+                    obs_next=obs_next,
+                    encoded_next=encoded_next,
+                    decoded_next=decoded_next,
                 )
 
                 # write to tensorboard
-                tb_writer.add_scalar("Loss/loss_all", loss, iters)
-                tb_writer.add_scalar("Loss/loss_reconstruct", recon_loss, iters)
-                tb_writer.add_scalar("Loss/loss_comparison", cmp_loss, iters)
+                tb_writer.add_scalar("Loss/loss_all", train_loss, iters)
+                tb_writer.add_scalar("Loss/loss_reconstruct", train_recon_loss, iters)
+                tb_writer.add_scalar(
+                    "Loss/loss_temporal_enforce", train_tmp_loss, iters
+                )
 
                 # log in terminal output
                 if iters % self.config["log_freq"] == 0:
-                    print(
-                        f"Iter: {iters:8d} Loss: {loss.item():0.3f} Reconstruction Loss: {recon_loss.item():0.3f} Comparison Loss: {cmp_loss.item():0.3f}"
-                    )
 
-                    test_losses, test_recon_losses, test_cmp_losses = [], [], []
+                    test_losses, test_recon_losses, test_tmp_losses = [], [], []
                     for batch_sample in test_dataloader:
-                        data_a, data_b = (
-                            batch_sample["a_obs"],
-                            batch_sample["b_obs"],
-                            # batch_sample["goal_obs"],
+                        obs_curr, obs_next = (
+                            batch_sample["obs_curr"],
+                            batch_sample["obs_next"],
                         )
 
                         if self.device.type == "cuda":
-                            data_a, data_b = (
-                                to_cuda(data_a),
-                                to_cuda(data_b),
-                                # to_cuda(data_g),
+                            obs_curr, obs_next = (
+                                to_cuda(obs_curr),
+                                to_cuda(obs_next),
                             )
 
                         with torch.no_grad():
-                            z_a, delta_z_a, decoded_a = self.model(data_a)
-                            z_b, delta_z_b, decoded_b = self.model(data_b)
-                            # z_g, _ = self.model(data_g)
+                            encoded_curr, decoded_curr = self.model(obs_curr)
+                            encoded_next, decoded_next = self.model(obs_next)
 
-                            (
+                            loss, recon_loss, tmp_loss = self.model.compute_loss(
+                                obs_curr=obs_curr,
+                                encoded_curr=encoded_curr,
+                                decoded_curr=decoded_curr,
+                                obs_next=obs_next,
+                                encoded_next=encoded_next,
+                                decoded_next=decoded_next,
+                            )
+
+                            test_losses.append(loss.item())
+                            test_recon_losses.append(recon_loss.item())
+                            test_tmp_losses.append(tmp_loss.item())
+
+                    test_loss = np.mean(test_losses)
+                    test_recon_loss = np.mean(test_recon_losses)
+                    test_tmp_loss = np.mean(test_tmp_losses)
+
+                    with open(self.model_log_path / f"{self.model_id}.csv", "a") as f:
+                        writer = csv.writer(f)
+                        writer.writerow(
+                            [
+                                train_loss.item(),
+                                train_recon_loss.item(),
+                                train_tmp_loss.item(),
                                 test_loss,
                                 test_recon_loss,
-                                test_cmp_loss,
-                            ) = self.model.compute_loss(
-                                data_a, decoded_a, z_a, delta_z_a, data_b, decoded_b, z_b, delta_z_b
-                            )
-                            test_losses.append(test_loss.item())
-                            test_recon_losses.append(test_recon_loss.item())
-                            test_cmp_losses.append(test_cmp_loss.item())
+                                test_tmp_loss,
+                            ]
+                        )
 
-                    csv_writer.writerow(
-                        [
-                            loss.item(),
-                            recon_loss.item(),
-                            cmp_loss.item(),
-                            np.mean(test_losses),
-                            np.mean(test_recon_losses),
-                            np.mean(test_cmp_losses),
-                        ]
+                    tb_writer.add_scalar("Loss/test_loss", test_loss, iters)
+                    tb_writer.add_scalar(
+                        "Loss/test_loss_reconstruct", test_recon_loss, iters
+                    )
+                    tb_writer.add_scalar(
+                        "Loss/test_loss_temporal_enforce", test_tmp_loss, iters
+                    )
+
+                    print(
+                        f"Iter: {iters:7d}\tTrain Loss: {train_loss.item():0.3f}\tTrain Recon Loss: {train_recon_loss.item():0.3f}\tTrain Temp Enforce Loss: {train_tmp_loss.item():0.3f}"
+                        + f"\tTest Loss: {test_loss.item():0.3f}\tTest Recon Loss: {test_recon_loss.item():0.3f}\tTest Temp Enforce Loss: {test_tmp_loss.item():0.3f}"
                     )
 
                 # perform update
-                loss.backward()
+                train_loss.backward()
                 nn.utils.clip_grad_norm_(self.model.parameters(), 10, "inf")
                 optimizer.step()
 
@@ -187,40 +210,42 @@ class DenseRewardPartialObs:
                     )
 
                 if iters > self.config["num_iters"]:
-                    csv_writer.close()
                     break
 
     def set_expert_demo(self, expert_rollout: list,) -> None:
-        start_raw_obs = expert_rollout[0].obs
-        goal_raw_obs = expert_rollout[-1].obs
+        raw_obs_init = expert_rollout[0].obs
+        raw_obs_goal = expert_rollout[-1].obs
 
         # process obs
-        start_obs = process_raw_sample_obs(self.config, start_raw_obs, unsqueeze=True)
-        goal_obs = process_raw_sample_obs(self.config, goal_raw_obs, unsqueeze=True)
+        obs_init = process_raw_sample_obs(self.config, raw_obs_init, unsqueeze=True)
+        obs_goal = process_raw_sample_obs(self.config, raw_obs_goal, unsqueeze=True)
 
         if self.device.type == "cuda":
-            start_obs = to_cuda(start_obs)
-            goal_obs = to_cuda(goal_obs)
+            obs_init = to_cuda(obs_init)
+            raw_obs_goal = to_cuda(obs_goal)
 
-        self.model.eval()
+        self.model.test()
         with torch.no_grad():
-            self.z_start, _ = self.model(start_obs)
-            self.z_goal, _ = self.model(goal_obs)
-            self.z_start = torch.squeeze(self.z_start)
+            encoded_init, _ = self.model(obs_init)
+            encoded_goal, _ = self.model(obs_goal)
+            self.z_init, _ = encoded_init
+            self.z_goal, _ = encoded_goal
+            self.z_init = torch.squeeze(self.z_init)
             self.z_goal = torch.squeeze(self.z_goal)
 
     def predict_reward(self, raw_obs: dict) -> float:
         obs = process_raw_sample_obs(self.config, raw_obs, unsqueeze=True)
         if self.device.type == "cuda":
             obs = to_cuda(obs)
-        self.model.eval()
 
+        self.model.test()
         with torch.no_grad():
-            z_obs, _ = self.model(obs)
-            z_obs = torch.squeeze(z_obs)
+            encoded, _ = self.model(obs)
+            z, _ = encoded
+            z = torch.squeeze(z)
 
-            dist_s_g = 1.0 - torch.dot(self.z_goal, self.z_start)
-            dist_pred_g = 1.0 - torch.dot(self.z_goal, z_obs)
+            dist_s_g = 1.0 - torch.dot(self.z_goal, self.z_init)
+            dist_pred_g = 1.0 - torch.dot(self.z_goal, z)
             reward = 1.0 - dist_pred_g / dist_s_g
 
         return reward.item()

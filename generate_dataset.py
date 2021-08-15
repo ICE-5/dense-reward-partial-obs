@@ -17,7 +17,7 @@ def parse_args():
     parser.add_argument(
         "--name",
         type=str,
-        default="processed_expert_fd_8",
+        required=True,
         help="name of the processed expert rollout .pkl file",
     )
     parser.add_argument(

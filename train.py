@@ -12,7 +12,7 @@ def parse_args():
         "--config", type=str, required=True, help="path of configuration file",
     )
     parser.add_argument(
-        "--model-params",
+        "--model-params-path",
         type=str,
         required=False,
         default=None,
@@ -32,6 +32,6 @@ if __name__ == "__main__":
 
     model_id = datetime.now().strftime("%m%d%Y-%H%M%S")
     drpo = DenseRewardPartialObs(
-        config, model_id=model_id, model_params=args.model_params
+        config, model_id=model_id, model_params_path=args.model_params_path
     )
     drpo.train()

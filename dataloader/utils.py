@@ -2,46 +2,28 @@ import pickle
 import numpy as np
 import pathlib
 import torch
+import copy
 
 
 class Sample:
     def __init__(
         self,
-        sample_name: str or None = None,
-        rollout_name: str or None = None,
-        depth_name: str or None = None,
         action: np.ndarray or None = None,
         obs: dict = {},
         pos: np.ndarray or None = None,
         orn: np.ndarray or None = None,
         dist_reward: float or None = None,
     ) -> None:
-        self.sample_name = sample_name
-        self.rollout_name = rollout_name
-        self.depth_name = depth_name
         self.action = action
         self.obs = obs
         self.pos = pos
         self.orn = orn
         self.dist_reward = dist_reward
 
-    @property
-    def sample_code(self) -> str:
-        if self.rollout_name is None or self.depth_name is None:
-            raise ValueError(
-                "sample_code not available, please update rollout_name and depth_name"
-            )
-        return f"{self.rollout_name}.{self.depth_name}.{self.sample_name}"
-
-    @sample_code.setter
-    def sample_code(self, sample_code: str) -> None:
-        # TODO: add safety & sanity check
-        self.rollout_name, self.depth_name, self.sample_name = sample_code.split(".")
-
 
 class FTWindow:
     def __init__(self, initial_value: np.ndarray) -> None:
-        self.window = initial_value
+        self.window = copy.deepcopy(initial_value)
 
     def update(self, new_ft: np.ndarray or list) -> None:
         try:
@@ -76,11 +58,7 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
     Returns:
         dict: processed observation, key being name of used sensors, also including depth
     """
-    try:
-        rollout_name, branch_name, timestep_name = sample_code.split(".")
-    except Exception:
-        print(sample_code)
-    timestep = int(timestep_name[1:])
+    rollout_name, branch_name, sample_name = sample_code.split(".")
 
     dataset_dir = (
         config["data_dir"]
@@ -94,10 +72,9 @@ def get_obs_by_code(config: dict, sample_code: str) -> dict:
         with open(
             dataset_dir / rollout_name / branch_name / f"{sensor}.pkl", "rb",
         ) as f:
-            raw_obs[sensor] = pickle.load(f)[timestep_name]
+            raw_obs[sensor] = pickle.load(f)[sample_name]
 
     obs = process_raw_sample_obs(config, raw_obs)
-    # obs["depth"] = float(timestep)
 
     return obs
 
@@ -129,7 +106,6 @@ def process_raw_sample_obs(
             t = t.transpose((2, 0, 1))
         else:
             pass
-
         processed_obs[sensor] = torch.Tensor(t).double()
 
     if unsqueeze:
@@ -138,12 +114,7 @@ def process_raw_sample_obs(
         return processed_obs
 
 
-def parse_depth(sample_code: str) -> int:
-    return int(sample_code.split(".")[1][1:])
-
-
 def to_cuda(data_dict: dict):
     if data_dict is None:
         return None
     return {k: v.cuda() for (k, v) in data_dict.items()}
-

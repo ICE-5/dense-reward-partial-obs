@@ -17,7 +17,7 @@ def parse_args():
         "--config", type=str, required=True, help="path of configuration file",
     )
     parser.add_argument(
-        "--model-params",
+        "--model-params-path",
         type=str,
         required=True,
         help="path of model parameter .pt file",
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     rollouts = process_rollouts(config, sort_by_length=False)
 
     # load model
-    drpo = DenseRewardPartialObs(config=config, model_params=args.model_params)
+    drpo = DenseRewardPartialObs(config=config, model_params_path=args.model_params_path)
     drpo.set_expert_demo(expert_rollout=expert_rollout)
 
     save_dir = pathlib.Path("media") / drpo.model_id / "vis_reward"

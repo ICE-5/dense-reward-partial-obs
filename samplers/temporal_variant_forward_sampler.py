@@ -64,21 +64,21 @@ class TemporalVariantForwardSampler(Sampler):
                 range(rollout_length),
                 f"Sampling progress for expert rollout #{rollout_idx}: ",
             ):
-                expert_curr_t_name = f"T{t:03d}"
-                expert_next_t_name = f"T{(t+1):03d}"
+                expert_curr_sample_name = f"T{t:03d}"
+                expert_next_sample_name = f"T{(t+1):03d}"
 
                 if t < rollout_length - 1:
                     self.pair_codes.append(
                         (
-                            f"{rollout_name}.{expert_branch_name}.{expert_curr_t_name}",
-                            f"{rollout_name}.{expert_branch_name}.{expert_next_t_name}",
+                            f"{rollout_name}.{expert_branch_name}.{expert_curr_sample_name}",
+                            f"{rollout_name}.{expert_branch_name}.{expert_next_sample_name}",
                         )
                     )
                 self.sample_codes.append(
-                    f"{rollout_name}.{expert_branch_name}.{expert_curr_t_name}"
+                    f"{rollout_name}.{expert_branch_name}.{expert_curr_sample_name}"
                 )
                 for sensor in self.sensors:
-                    eval(f"expert_branch_{sensor}")[expert_curr_t_name] = rollout[
+                    eval(f"expert_branch_{sensor}")[expert_curr_sample_name] = rollout[
                         t
                     ].obs[sensor]
 
@@ -123,8 +123,8 @@ class TemporalVariantForwardSampler(Sampler):
                             if interior_t > rollout_length - 1:
                                 break
 
-                            curr_t_name = f"T{interior_t:03d}"
-                            next_t_name = f"T{(interior_t+1):03d}"
+                            curr_sample_name = f"T{interior_t:03d}"
+                            next_sample_name = f"T{(interior_t+1):03d}"
 
                             progress = interior_t / rollout_length
                             alpha = self.alpha_solver.get_alpha(progress)
@@ -142,21 +142,21 @@ class TemporalVariantForwardSampler(Sampler):
                             if interior_t < self.num_steps_per_branch - 1:
                                 self.pair_codes.append(
                                     (
-                                        f"{rollout_name}.{branch_name}.{curr_t_name}",
-                                        f"{rollout_name}.{branch_name}.{next_t_name}",
+                                        f"{rollout_name}.{branch_name}.{curr_sample_name}",
+                                        f"{rollout_name}.{branch_name}.{next_sample_name}",
                                     )
                                 )
 
                             self.sample_codes.append(
-                                f"{rollout_name}.{branch_name}.{curr_t_name}"
+                                f"{rollout_name}.{branch_name}.{curr_sample_name}"
                             )
                             for sensor in self.sensors:
                                 if sensor == "ft":
                                     eval(f"branch_{sensor}")[
-                                        curr_t_name
+                                        curr_sample_name
                                     ] = copy.deepcopy(ftw.window)
                                 else:
-                                    eval(f"branch_{sensor}")[curr_t_name] = info[sensor]
+                                    eval(f"branch_{sensor}")[curr_sample_name] = info[sensor]
 
                         for sensor in self.sensors:
                             pickle.dump(
