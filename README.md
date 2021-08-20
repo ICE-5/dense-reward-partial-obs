@@ -5,7 +5,7 @@ Please see the instructions below for running the code. The code have been teste
 - [Learning Dense Reward With Partial Observation (DRPO)](#learning-dense-reward-with-partial-observation-drpo)
   - [0. Installation](#0-installation)
     - [0.1 Dependencies (TBA)](#01-dependencies-tba)
-    - [0.2 Install the virtual environment ###](#02-install-the-virtual-environment-)
+    - [0.2 Install the virtual environment](#02-install-the-virtual-environment)
   - [1. Project configuration file](#1-project-configuration-file)
     - [1.1 Dataset name](#11-dataset-name)
   - [2. Get and process expert demo from RD2](#2-get-and-process-expert-demo-from-rd2)
@@ -38,7 +38,7 @@ tensorboard
 
 --------------------------------------------------------------------
 
-### 0.2 Install the virtual environment ###  
+### 0.2 Install the virtual environment
 
 1. Install the conda virtual environment from the `environment.yml` file by running 
    - `conda env create -f environment_mac.yml` in the terminal for MacOS
@@ -234,17 +234,11 @@ Run `eval.py` in project folder with the following argument setting.
 
 #### Example
 ```bash
-python train.py -c configs/debug.yaml
+python eval.py -c configs/debug.yaml -n expert -m checkpoints/<MODEL-ID>/2800.pt
 ```
 
 #### Output
 There will be prompted readings of dense reward and distance reward. Also, plots of reward over each trajectoru can be found in `media/<MODEL-ID>/vis_reward`
-
-> `<MODEL-ID>` is a time identifier of training.
-```
-checkpoints/<MODEL-ID>/
-logs/<MODEL-ID>/
-```
 
 
 
