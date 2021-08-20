@@ -31,6 +31,7 @@ control_angle_start: 45
 control_angle_mid: 85
 
 # network architecture
+architecture: 1
 ft_network_type: "MLP"                                # choose one: "MLP" / "LSTM"
 z_dim: 64                                             # try 48
 sensor_used_in_model: ["ft", "depthmap"]               # must have: "ft" , can have: "depthmap", "image". sensors used here must be contained in sensor_used_in_sampling

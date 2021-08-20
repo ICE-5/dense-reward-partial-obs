@@ -252,6 +252,7 @@ class DenseRewardPartialObs:
             
         else:
             reconstructed_z = self.z_init + self.prev_delta_z_sum + delta_z
+            reconstructed_z = reconstructed_z / torch.norm(reconstructed_z, keepdim=True)
             dist_pred_g = 1.0 - torch.dot(self.z_goal, reconstructed_z)
 
         dist_s_g = 1.0 - torch.dot(self.z_goal, self.z_init)

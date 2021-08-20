@@ -34,8 +34,8 @@ def plot_curves(
 
 def vis_loss(loss_file: str or pathlib.Path, save_dir: str) -> None:
     x = []
-    train_loss, train_recon_loss, train_cmp_loss = [], [], []
-    eval_loss, eval_recon_loss, eval_cmp_loss = [], [], []
+    train_loss, train_recon_loss, train_tmp_loss = [], [], []
+    eval_loss, eval_recon_loss, eval_tmp_loss = [], [], []
     with open(loss_file, "r") as f:
         reader = csv.reader(f, delimiter=",")
         for i, row in enumerate(reader):
@@ -44,10 +44,10 @@ def vis_loss(loss_file: str or pathlib.Path, save_dir: str) -> None:
                 row = [float(x) for x in row]
                 train_loss.append(row[0])
                 train_recon_loss.append(row[1])
-                train_cmp_loss.append(row[2])
+                train_tmp_loss.append(row[2])
                 eval_loss.append(row[3])
                 eval_recon_loss.append(row[4])
-                eval_cmp_loss.append(row[5])
+                eval_tmp_loss.append(row[5])
 
 
     plot_curves(
@@ -55,7 +55,7 @@ def vis_loss(loss_file: str or pathlib.Path, save_dir: str) -> None:
         ys={
             "combined loss": train_loss,
             "reconstruction loss": train_recon_loss,
-            "comparison loss": train_cmp_loss,
+            "temporal enforcement loss": train_tmp_loss,
         },
         title="Train",
         save_dir=save_dir,
@@ -67,7 +67,7 @@ def vis_loss(loss_file: str or pathlib.Path, save_dir: str) -> None:
         ys={
             "combined loss": eval_loss,
             "reconstruction loss": eval_recon_loss,
-            "comparison loss": eval_cmp_loss,
+            "temporal enforcement loss": eval_tmp_loss,
         },
         title="Evaluation",
         save_dir=save_dir,
@@ -88,12 +88,12 @@ def vis_loss(loss_file: str or pathlib.Path, save_dir: str) -> None:
     plot_curves(
         x=x,
         ys={
-            "train": train_cmp_loss,
-            "eval": eval_cmp_loss,
+            "train": train_tmp_loss,
+            "eval": eval_tmp_loss,
         },
-        title="Comparison Loss",
+        title="Temporal enforcement Loss",
         save_dir=save_dir,
-        save_name=f"cmp_loss",
+        save_name=f"tmp_loss",
     )
 
     plot_curves(
@@ -114,5 +114,7 @@ if __name__ == '__main__':
     save_dir.mkdir(parents=True, exist_ok=True)
 
     vis_loss(loss_file, save_dir)
+
+    prGreen(f"\nSUCCESS | directory with plots: {save_dir}\n")
 
 

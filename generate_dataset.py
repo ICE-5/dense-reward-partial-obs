@@ -92,6 +92,8 @@ def generate_dataset(
 
     sampler.split_train_test()
 
+    prGreen(f"\nSUCCESS | processed expert rollouts in: {output_dir}\n")
+
 
 if __name__ == "__main__":
     args = parse_args()
@@ -101,3 +103,5 @@ if __name__ == "__main__":
     config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
 
     generate_dataset(config, args.expert_rollouts_name, args.split_only)
+
+

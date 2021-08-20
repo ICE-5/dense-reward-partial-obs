@@ -116,7 +116,7 @@ if __name__ == "__main__":
         ys["dense reward"] = dense_rewards
         if i not in succ_rollout_indices:
             name = "fail"
-            ys["distance reward"] = dist_rewards
+            # ys["distance reward"] = dist_rewards
         else:
             name = "succ"
 
@@ -127,3 +127,5 @@ if __name__ == "__main__":
             title=f"rollout #{i} {name}",
             save_name=f"rollout_{i}_{name}",
         )
+
+    prGreen(f"\nSUCCESS | directory with plots: {save_dir}\n")
