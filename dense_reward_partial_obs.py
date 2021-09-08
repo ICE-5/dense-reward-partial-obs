@@ -283,8 +283,8 @@ class DenseRewardPartialObs:
 
         self.model.eval()
         with torch.no_grad():
-            encoded_init, _ = self.model(obs_init)
-            encoded_goal, _ = self.model(obs_goal)
+            encoded_init = self.model(obs_init)
+            encoded_goal = self.model(obs_goal)
             self.z_init, _ = encoded_init
             self.z_goal, _ = encoded_goal
             self.z_init = torch.squeeze(self.z_init)
@@ -297,7 +297,7 @@ class DenseRewardPartialObs:
 
         self.model.eval()
         with torch.no_grad():
-            encoded, _ = self.model(obs)
+            encoded = self.model(obs)
             z, delta_z = encoded
             z = torch.squeeze(z)
             delta_z = torch.squeeze(delta_z)

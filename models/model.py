@@ -88,23 +88,20 @@ class PartialObsAutoEncoder(nn.Module):
                 if sensor != "ft":
                     concat_z.append(raw_encoded[sensor])
             z = self.fusion(torch.cat(concat_z, dim=1))
-            z = z / torch.norm(z, dim=1, keepdim=True)
         else:
             for sensor in self.sensors:
                 if sensor != "ft":
                     z = raw_encoded[sensor]
-                    z = z / torch.norm(z, dim=1, keepdim=True)
+
+        # different normalization for different architectures
+        if self.architecture == 1:
+            z /= torch.norm(z, dim=1, keepdim=True)
+        elif self.architecture == 2:
+            delta_z /= torch.norm(delta_z, dim=1, keepdim=True)
+        else:
+            raise ValueError("Invalid architecture type")
 
         return z, delta_z
-
-    # def decode(self, z, delta_z) -> dict:
-    #     decoded = {}
-    #     for sensor in self.sensors:
-    #         if sensor == "ft":
-    #             decoded[sensor] = getattr(self, f"{sensor}_decoder")(delta_z)
-    #         else:
-    #             decoded[sensor] = getattr(self, f"{sensor}_decoder")(z)
-    #     return decoded
 
     def decode(self, z: torch.Tensor, sensor: str) -> torch.Tensor:
         return getattr(self, f"{sensor}_decoder")(z)
@@ -157,6 +154,7 @@ class PartialObsAutoEncoder(nn.Module):
     def compute_temporal_enforcement_loss(
         self, encoded_curr: tuple, encoded_next: tuple
     ) -> torch.Tensor:
+        # architecture 2 only
         z_curr, _ = encoded_curr
         z_next, delta_z_next = encoded_next
 
@@ -164,9 +162,7 @@ class PartialObsAutoEncoder(nn.Module):
         loss = self.l2_loss(z_curr + delta_z_next, z_next)
         return loss
 
-    def compute_reconstruction_loss(
-        self, obs: dict, decoded: dict
-    ) -> torch.Tensor:
+    def compute_reconstruction_loss(self, obs: dict, decoded: dict) -> torch.Tensor:
         loss = 0.0
         sensors = decoded.keys()
         for sensor in sensors:
