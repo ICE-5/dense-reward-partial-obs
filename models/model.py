@@ -95,9 +95,9 @@ class PartialObsAutoEncoder(nn.Module):
 
         # different normalization for different architectures
         if self.architecture == 1:
-            z /= torch.norm(z, dim=1, keepdim=True)
+            z = z / torch.norm(z, dim=1, keepdim=True)
         elif self.architecture == 2:
-            delta_z /= torch.norm(delta_z, dim=1, keepdim=True)
+            delta_z = delta_z / torch.norm(delta_z, dim=1, keepdim=True)
         else:
             raise ValueError("Invalid architecture type")
 
