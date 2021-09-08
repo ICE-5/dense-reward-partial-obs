@@ -31,7 +31,7 @@ control_angle_start: 45
 control_angle_mid: 85
 
 # network architecture
-architecture: 1                                        # choose one: 1 / 2
+architecture: 2                                        # choose one: 1 / 2
 ft_network_type: "LSTM"                                # choose one: "MLP" / "LSTM"
 z_dim: 128                                             # try 48
 sensor_used_in_model: ["ft", "depthmap"]               # must have: "ft" , can have: "depthmap", "image". sensors used here must be contained in sensor_used_in_sampling
@@ -43,8 +43,8 @@ num_workers: 0
 lr: 0.0003
 weight_decay: 0.000005
 num_iters: 1000000
-log_freq: 200
-save_freq: 200
+log_freq: 5
+save_freq: 5
 
 # loss
 reconstruction_lambda: 0.2

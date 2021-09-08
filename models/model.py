@@ -27,6 +27,7 @@ class PartialObsAutoEncoder(nn.Module):
         self.z_dim = config["z_dim"]
         initialize_weights = config["initialize_weights"]
         self.sensors = config["sensor_used_in_model"]
+        self.architecture = config["architecture"]
 
         # there must be FT sensor to provide delta_z info
         assert "ft" in self.sensors
@@ -96,48 +97,66 @@ class PartialObsAutoEncoder(nn.Module):
 
         return z, delta_z
 
-    def decode(self, z, delta_z) -> dict:
-        decoded = {}
-        for sensor in self.sensors:
-            if sensor == "ft":
-                decoded[sensor] = getattr(self, f"{sensor}_decoder")(delta_z)
-            else:
-                decoded[sensor] = getattr(self, f"{sensor}_decoder")(z)
-        return decoded
+    # def decode(self, z, delta_z) -> dict:
+    #     decoded = {}
+    #     for sensor in self.sensors:
+    #         if sensor == "ft":
+    #             decoded[sensor] = getattr(self, f"{sensor}_decoder")(delta_z)
+    #         else:
+    #             decoded[sensor] = getattr(self, f"{sensor}_decoder")(z)
+    #     return decoded
+
+    def decode(self, z: torch.Tensor, sensor: str) -> torch.Tensor:
+        return getattr(self, f"{sensor}_decoder")(z)
 
     def forward(self, obs: dict) -> tuple:
         raw_encoded = self.encode(obs)
         z, delta_z = self.process_raw_encoded(raw_encoded)
         encoded = (z, delta_z)
-        decoded = self.decode(z, delta_z)
-        return encoded, decoded
+        return encoded
 
     def compute_loss(
         self,
         obs_curr: dict,
-        encoded_curr: dict,
+        encoded_curr: tuple,
         decoded_curr: dict,
         obs_next: dict,
-        encoded_next: dict,
+        encoded_next: tuple,
         decoded_next: dict,
-    ) -> tuple:
+    ) -> dict:
         # reconstruction loss
         recon_loss_curr = self.compute_reconstruction_loss(obs_curr, decoded_curr)
         recon_loss_next = self.compute_reconstruction_loss(obs_next, decoded_next)
         recon_loss = recon_loss_curr + recon_loss_next
 
-        # temporal enforcement loss
-        temp_enforce_loss = self.compute_temporal_enforcement_loss(
-            encoded_curr, encoded_next
-        )
+        if self.architecture == 1:
+            # temporal enforcement loss
+            temp_enforce_loss = self.compute_temporal_enforcement_loss(
+                encoded_curr, encoded_next
+            )
 
-        loss = (
-            self.config["reconstruction_lambda"] * recon_loss
-            + self.config["temporal_enforcement_lambda"] * temp_enforce_loss
-        )
-        return loss, recon_loss, temp_enforce_loss
+            loss = (
+                self.config["reconstruction_lambda"] * recon_loss
+                + self.config["temporal_enforcement_lambda"] * temp_enforce_loss
+            )
+            return {
+                "loss": loss,
+                "recon_loss": recon_loss,
+                "temp_enforce_loss": temp_enforce_loss,
+            }
+        elif self.architecture == 2:
+            loss = recon_loss
+            return {
+                "loss": loss,
+                "recon_loss_curr": recon_loss_curr,
+                "recon_loss_next": recon_loss_next,
+            }
+        else:
+            raise ValueError("Invalid architecture type")
 
-    def compute_temporal_enforcement_loss(self, encoded_curr, encoded_next) -> torch.Tensor:
+    def compute_temporal_enforcement_loss(
+        self, encoded_curr: tuple, encoded_next: tuple
+    ) -> torch.Tensor:
         z_curr, _ = encoded_curr
         z_next, delta_z_next = encoded_next
 
@@ -145,9 +164,12 @@ class PartialObsAutoEncoder(nn.Module):
         loss = self.l2_loss(z_curr + delta_z_next, z_next)
         return loss
 
-    def compute_reconstruction_loss(self, obs: dict, decoded: dict) -> torch.Tensor:
+    def compute_reconstruction_loss(
+        self, obs: dict, decoded: dict
+    ) -> torch.Tensor:
         loss = 0.0
-        for sensor in self.config["sensor_used_in_model"]:
+        sensors = decoded.keys()
+        for sensor in sensors:
             loss += self.l2_loss(obs[sensor], decoded[sensor],)
         return loss
 

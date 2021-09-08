@@ -31,6 +31,10 @@ class DenseRewardPartialObs:
         )
         self.model = PartialObsAutoEncoder(config).double().to(self.device)
 
+        self.architecture = config["architecture"]
+        self.sensors = config["sensor_used_in_model"]
+        self.loss_keys = None
+
         # try and parse model ID from model params path
         if model_id is None:
             try:
@@ -46,7 +50,7 @@ class DenseRewardPartialObs:
         if model_params_path is not None:
             ckpt = torch.load(model_params_path)
             self.model.load_state_dict(ckpt["model_state_dict"])
-        
+
         self.prev_delta_z_sum = 0.0
 
     def train(self,) -> None:
@@ -61,16 +65,6 @@ class DenseRewardPartialObs:
 
         with open(self.model_log_path / f"{self.model_id}.csv", "w") as f:
             writer = csv.writer(f)
-            writer.writerow(
-                [
-                    "train_loss",
-                    "train_recon_loss",
-                    "train_tmp_loss",
-                    "test_loss",
-                    "test_recon_loss",
-                    "test_tmp_loss",
-                ]
-            )
 
         # load data
         train_dataset = PatialObsDataset(self.config, phase="train")
@@ -113,10 +107,43 @@ class DenseRewardPartialObs:
                     )
 
                 optimizer.zero_grad()
-                encoded_curr, decoded_curr = self.model(obs_curr)
-                encoded_next, decoded_next = self.model(obs_next)
+                encoded_curr = self.model(obs_curr)
+                encoded_next = self.model(obs_next)
+                z_curr, delta_z_curr = encoded_curr
+                z_next, delta_z_next = encoded_next
 
-                train_loss, train_recon_loss, train_tmp_loss = self.model.compute_loss(
+                decoded_curr = {}
+                decoded_next = {}
+
+                if self.architecture == 1:
+                    for sensor in self.sensors:
+                        if sensor == "ft":
+                            decoded_curr[sensor] = self.model.decode(
+                                delta_z_curr, sensor
+                            )
+                            decoded_next[sensor] = self.model.decode(
+                                delta_z_next, sensor
+                            )
+                        else:
+                            decoded_curr[sensor] = self.model.decode(z_curr, sensor)
+                            decoded_next[sensor] = self.model.decode(z_next, sensor)
+
+                elif self.architecture == 2:
+                    for sensor in self.sensors:
+                        if sensor != "ft":
+                            decoded_curr[sensor] = self.model.decode(z_curr, sensor)
+
+                    crafted_z_next = z_curr + delta_z_next
+                    for sensor in self.sensors:
+                        if sensor != "ft":
+                            decoded_next[sensor] = self.model.decode(
+                                crafted_z_next, sensor
+                            )
+
+                else:
+                    raise ValueError("Invalid architecture type")
+
+                train_loss_dict = self.model.compute_loss(
                     obs_curr=obs_curr,
                     encoded_curr=encoded_curr,
                     decoded_curr=decoded_curr,
@@ -125,17 +152,20 @@ class DenseRewardPartialObs:
                     decoded_next=decoded_next,
                 )
 
+                if iters == 1:
+                    self.loss_keys = train_loss_dict.keys()
+
                 # write to tensorboard
-                tb_writer.add_scalar("Loss/loss_all", train_loss, iters)
-                tb_writer.add_scalar("Loss/loss_reconstruct", train_recon_loss, iters)
-                tb_writer.add_scalar(
-                    "Loss/loss_temporal_enforce", train_tmp_loss, iters
-                )
+                for k in self.loss_keys:
+                    tb_writer.add_scalar(f"Loss_train/{k}", train_loss_dict[k], iters)
 
                 # log in terminal output
                 if iters % self.config["log_freq"] == 0:
 
-                    test_losses, test_recon_losses, test_tmp_losses = [], [], []
+                    output = []
+                    for k in self.loss_keys:
+                        output.append(train_loss_dict[k].item())
+
                     for batch_sample in test_dataloader:
                         obs_curr, obs_next = (
                             batch_sample["obs_curr"],
@@ -149,10 +179,43 @@ class DenseRewardPartialObs:
                             )
 
                         with torch.no_grad():
-                            encoded_curr, decoded_curr = self.model(obs_curr)
-                            encoded_next, decoded_next = self.model(obs_next)
+                            encoded_curr = self.model(obs_curr)
+                            encoded_next = self.model(obs_next)
+                            z_curr, delta_z_curr = encoded_curr
+                            z_next, delta_z_next = encoded_next
 
-                            loss, recon_loss, tmp_loss = self.model.compute_loss(
+                            decoded_curr = {}
+                            decoded_next = {}
+
+                            if self.architecture == 1:
+                                for sensor in self.sensors:
+                                    if sensor == "ft":
+                                        decoded_curr[sensor] = self.model.decode(
+                                            delta_z_curr, sensor
+                                        )
+                                        decoded_next[sensor] = self.model.decode(
+                                            delta_z_next, sensor
+                                        )
+                                    else:
+                                        decoded_curr[sensor] = self.model.decode(z_curr, sensor)
+                                        decoded_next[sensor] = self.model.decode(z_next, sensor)
+
+                            elif self.architecture == 2:
+                                for sensor in self.sensors:
+                                    if sensor != "ft":
+                                        decoded_curr[sensor] = self.model.decode(z_curr, sensor)
+
+                                crafted_z_next = z_curr + delta_z_next
+                                for sensor in self.sensors:
+                                    if sensor != "ft":
+                                        decoded_next[sensor] = self.model.decode(
+                                            crafted_z_next, sensor
+                                        )
+
+                            else:
+                                raise ValueError("Invalid architecture type")
+
+                            test_loss_dict = self.model.compute_loss(
                                 obs_curr=obs_curr,
                                 encoded_curr=encoded_curr,
                                 decoded_curr=decoded_curr,
@@ -161,42 +224,34 @@ class DenseRewardPartialObs:
                                 decoded_next=decoded_next,
                             )
 
-                            test_losses.append(loss.item())
-                            test_recon_losses.append(recon_loss.item())
-                            test_tmp_losses.append(tmp_loss.item())
+                            for k in self.loss_keys:
+                                if f"test_{k}_list" not in globals().keys():
+                                    globals()[f"test_{k}_list"] = []
 
-                    test_loss = np.mean(test_losses)
-                    test_recon_loss = np.mean(test_recon_losses)
-                    test_tmp_loss = np.mean(test_tmp_losses)
+                                eval(f"test_{k}_list").append(test_loss_dict[k].item())
+
+                    for k in self.loss_keys:
+                        globals()[f"test_{k}"] = np.mean(eval(f"test_{k}_list"))
+                        output.append(eval(f"test_{k}"))
+                        del globals()[f"test_{k}_list"]
 
                     with open(self.model_log_path / f"{self.model_id}.csv", "a") as f:
                         writer = csv.writer(f)
-                        writer.writerow(
-                            [
-                                train_loss.item(),
-                                train_recon_loss.item(),
-                                train_tmp_loss.item(),
-                                test_loss,
-                                test_recon_loss,
-                                test_tmp_loss,
-                            ]
-                        )
+                        writer.writerow(output)
 
-                    tb_writer.add_scalar("Loss/test_loss", test_loss, iters)
-                    tb_writer.add_scalar(
-                        "Loss/test_loss_reconstruct", test_recon_loss, iters
-                    )
-                    tb_writer.add_scalar(
-                        "Loss/test_loss_temporal_enforce", test_tmp_loss, iters
-                    )
+                    for k in self.loss_keys:
+                        tb_writer.add_scalar(f"Loss_test/{k}", eval(f"test_{k}"), iters)
 
-                    print(
-                        f"Iter: {iters:7d}\tTrain Loss: {train_loss.item():0.3f}\tTrain Recon Loss: {train_recon_loss.item():0.3f}\tTrain Temp Enforce Loss: {train_tmp_loss.item():0.3f}"
-                        + f"\tTest Loss: {test_loss.item():0.3f}\tTest Recon Loss: {test_recon_loss.item():0.3f}\tTest Temp Enforce Loss: {test_tmp_loss.item():0.3f}"
-                    )
+                    # print to terminal
+                    refactored_output = f"iter: {iters:6d}\t"
+                    for i, k in enumerate(self.loss_keys):
+                        refactored_output += f"train_{k}: {output[i]:.4f}\t"
+                    for i, k in enumerate(self.loss_keys):
+                        refactored_output += f"test_{k}: {output[i+3]:.4f}\t"
+                    print(refactored_output)
 
                 # perform update
-                train_loss.backward()
+                train_loss_dict["loss"].backward()
                 nn.utils.clip_grad_norm_(self.model.parameters(), 10, "inf")
                 optimizer.step()
 
@@ -206,7 +261,7 @@ class DenseRewardPartialObs:
                         {
                             "model_state_dict": self.model.state_dict(),
                             "optimizer_state_dict": optimizer.state_dict(),
-                            "loss": loss,
+                            "loss": train_loss_dict["loss"],
                         },
                         self.model_save_dir / f"{iters}.pt",
                     )
@@ -246,13 +301,15 @@ class DenseRewardPartialObs:
             z, delta_z = encoded
             z = torch.squeeze(z)
             delta_z = torch.squeeze(delta_z)
-        
+
         if not use_delta:
             dist_pred_g = 1.0 - torch.dot(self.z_goal, z)
-            
+
         else:
             reconstructed_z = self.z_init + self.prev_delta_z_sum + delta_z
-            reconstructed_z = reconstructed_z / torch.norm(reconstructed_z, keepdim=True)
+            reconstructed_z = reconstructed_z / torch.norm(
+                reconstructed_z, keepdim=True
+            )
             dist_pred_g = 1.0 - torch.dot(self.z_goal, reconstructed_z)
 
         dist_s_g = 1.0 - torch.dot(self.z_goal, self.z_init)
