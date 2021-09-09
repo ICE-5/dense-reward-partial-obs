@@ -197,13 +197,19 @@ class DenseRewardPartialObs:
                                             delta_z_next, sensor
                                         )
                                     else:
-                                        decoded_curr[sensor] = self.model.decode(z_curr, sensor)
-                                        decoded_next[sensor] = self.model.decode(z_next, sensor)
+                                        decoded_curr[sensor] = self.model.decode(
+                                            z_curr, sensor
+                                        )
+                                        decoded_next[sensor] = self.model.decode(
+                                            z_next, sensor
+                                        )
 
                             elif self.architecture == 2 or self.architecture == 3:
                                 for sensor in self.sensors:
                                     if sensor != "ft":
-                                        decoded_curr[sensor] = self.model.decode(z_curr, sensor)
+                                        decoded_curr[sensor] = self.model.decode(
+                                            z_curr, sensor
+                                        )
 
                                 crafted_z_next = z_curr + delta_z_next
                                 for sensor in self.sensors:
@@ -287,10 +293,8 @@ class DenseRewardPartialObs:
             encoded_goal = self.model(obs_goal)
             self.z_init, _ = encoded_init
             self.z_goal, _ = encoded_goal
-
-            # normalize for sanity
-            self.z_init = torch.squeeze(self.z_init) / torch.norm(self.z_init, keepdim=True)
-            self.z_goal = torch.squeeze(self.z_goal) / torch.norm(self.z_goal, keepdim=True)
+            self.z_init = torch.squeeze(self.z_init)
+            self.z_goal = torch.squeeze(self.z_goal)
 
     def predict_reward(self, raw_obs: dict, use_delta: bool = False) -> float:
         obs = process_raw_sample_obs(self.config, raw_obs, unsqueeze=True)
@@ -305,15 +309,16 @@ class DenseRewardPartialObs:
             delta_z = torch.squeeze(delta_z)
 
         if not use_delta:
-            z = z / torch.norm(z, keepdim=True)
-            dist_pred_g = 1.0 - torch.dot(self.z_goal, z)
+            dist_pred_g = 1.0 - torch.dot(self.z_goal, z) / (
+                torch.norm(self.z_goal, keepdim=True) * torch.norm(z, keepdim=True)
+            )
 
         else:
             reconstructed_z = self.z_init + self.prev_delta_z_sum + delta_z
-            reconstructed_z = reconstructed_z / torch.norm(
-                reconstructed_z, keepdim=True
+            dist_pred_g = 1.0 - torch.dot(self.z_goal, reconstructed_z) / (
+                torch.norm(self.z_goal, keepdim=True)
+                * torch.norm(reconstructed_z, keepdim=True)
             )
-            dist_pred_g = 1.0 - torch.dot(self.z_goal, reconstructed_z)
 
         dist_s_g = 1.0 - torch.dot(self.z_goal, self.z_init)
         reward = 1.0 - dist_pred_g / dist_s_g
