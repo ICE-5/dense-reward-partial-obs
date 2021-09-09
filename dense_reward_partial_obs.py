@@ -287,8 +287,10 @@ class DenseRewardPartialObs:
             encoded_goal = self.model(obs_goal)
             self.z_init, _ = encoded_init
             self.z_goal, _ = encoded_goal
-            self.z_init = torch.squeeze(self.z_init)
-            self.z_goal = torch.squeeze(self.z_goal)
+
+            # normalize for sanity
+            self.z_init = torch.squeeze(self.z_init) / torch.norm(self.z_init, keepdim=True)
+            self.z_goal = torch.squeeze(self.z_goal) / torch.norm(self.z_goal, keepdim=True)
 
     def predict_reward(self, raw_obs: dict, use_delta: bool = False) -> float:
         obs = process_raw_sample_obs(self.config, raw_obs, unsqueeze=True)
@@ -303,6 +305,7 @@ class DenseRewardPartialObs:
             delta_z = torch.squeeze(delta_z)
 
         if not use_delta:
+            z = z / torch.norm(z, keepdim=True)
             dist_pred_g = 1.0 - torch.dot(self.z_goal, z)
 
         else:
