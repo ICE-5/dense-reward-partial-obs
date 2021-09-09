@@ -277,7 +277,7 @@ class DenseRewardPartialObs:
 
     def set_expert_demo(self, expert_rollout: list,) -> None:
         raw_obs_init = expert_rollout[0].obs
-        raw_obs_goal = expert_rollout[-1].obs
+        raw_obs_goal = expert_rollout[-2].obs
 
         # process obs
         obs_init = process_raw_sample_obs(self.config, raw_obs_init, unsqueeze=True)
