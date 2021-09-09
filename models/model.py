@@ -96,7 +96,7 @@ class PartialObsAutoEncoder(nn.Module):
         # different normalization for different architectures
         if self.architecture == 1:
             z = z / torch.norm(z, dim=1, keepdim=True)
-        elif self.architecture == 2:
+        elif self.architecture == 2 or self.architecture == 3:
             delta_z = delta_z / torch.norm(delta_z, dim=1, keepdim=True)
         else:
             raise ValueError("Invalid architecture type")
@@ -126,7 +126,7 @@ class PartialObsAutoEncoder(nn.Module):
         recon_loss_next = self.compute_reconstruction_loss(obs_next, decoded_next)
         recon_loss = recon_loss_curr + recon_loss_next
 
-        if self.architecture == 1:
+        if self.architecture == 1 or self.architecture == 3:
             # temporal enforcement loss
             temp_enforce_loss = self.compute_temporal_enforcement_loss(
                 encoded_curr, encoded_next

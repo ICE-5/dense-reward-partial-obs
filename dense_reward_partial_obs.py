@@ -128,7 +128,7 @@ class DenseRewardPartialObs:
                             decoded_curr[sensor] = self.model.decode(z_curr, sensor)
                             decoded_next[sensor] = self.model.decode(z_next, sensor)
 
-                elif self.architecture == 2:
+                elif self.architecture == 2 or self.architecture == 3:
                     for sensor in self.sensors:
                         if sensor != "ft":
                             decoded_curr[sensor] = self.model.decode(z_curr, sensor)
@@ -200,7 +200,7 @@ class DenseRewardPartialObs:
                                         decoded_curr[sensor] = self.model.decode(z_curr, sensor)
                                         decoded_next[sensor] = self.model.decode(z_next, sensor)
 
-                            elif self.architecture == 2:
+                            elif self.architecture == 2 or self.architecture == 3:
                                 for sensor in self.sensors:
                                     if sensor != "ft":
                                         decoded_curr[sensor] = self.model.decode(z_curr, sensor)
