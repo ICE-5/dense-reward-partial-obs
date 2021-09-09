@@ -309,20 +309,21 @@ class DenseRewardPartialObs:
             delta_z = torch.squeeze(delta_z)
 
         if not use_delta:
-            dist_pred_g = 1.0 - torch.dot(self.z_goal, z) / (
-                torch.norm(self.z_goal, keepdim=True) * torch.norm(z, keepdim=True)
-            )
+            dist_pred_g = self.calc_dist(self.z_goal, z)
 
         else:
             reconstructed_z = self.z_init + self.prev_delta_z_sum + delta_z
-            dist_pred_g = 1.0 - torch.dot(self.z_goal, reconstructed_z) / (
-                torch.norm(self.z_goal, keepdim=True)
-                * torch.norm(reconstructed_z, keepdim=True)
-            )
+            dist_pred_g = self.calc_dist(self.z_goal, reconstructed_z)
 
-        dist_s_g = 1.0 - torch.dot(self.z_goal, self.z_init)
+        dist_s_g = self.calc_dist(self.z_goal, self.z_init)
         reward = 1.0 - dist_pred_g / dist_s_g
 
         self.prev_delta_z_sum += delta_z
         return reward.item()
+
+    @staticmethod
+    def calc_dist(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        return 1.0 - torch.dot(x, y) / (
+            torch.norm(x, keepdim=True) * torch.norm(y, keepdim=True)
+        )
 
