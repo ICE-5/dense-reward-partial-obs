@@ -82,3 +82,8 @@ if t == 'pyatk':
                              target_friction=1.0,
                              debug_mode=False)
         return environment 
+
+if t == 'robosuite':
+    import robosuite as suite
+    def env_creater(env_config):
+        pass

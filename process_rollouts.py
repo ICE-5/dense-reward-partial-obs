@@ -126,11 +126,20 @@ if __name__ == "__main__":
             selected_rollout_indices = row
     selected_rollout_indices = [int(x) for x in selected_rollout_indices]
 
+    # output = process_rollouts(
+    #     config,
+    #     raw_expert_rollouts_path=storage_dir / f"{args.expert_rollouts_name}.pkl",
+    #     selected_rollout_indices=selected_rollout_indices,
+    #     num_output_rollouts=None,
+    #     sort_by_length=False,
+    #     save=True,
+    # )
+
     output = process_rollouts(
         config,
         raw_expert_rollouts_path=storage_dir / f"{args.expert_rollouts_name}.pkl",
-        selected_rollout_indices=selected_rollout_indices,
         num_output_rollouts=None,
+        sort_by_length=False,
         save=True,
     )
 
