@@ -1,89 +1,94 @@
-import math
-from envs.robot_sim_robotless_lap_joint import RobotSimRobotlessLapJoint
-# from envs.robot_sim_robotless_peg_in_hole import RobotSimRobotlessPegInHole
+import argparse
+import json
+import os
+# import random
 
-t = 'sim' 
+import h5py
+import numpy as np
 
-if t == 'sim':
-    from envs.task_sim import TaskSim
-    def env_creator(env_config):
-        environment = TaskSim(env_robot=RobotSimRobotlessLapJoint,  # choose the sim robot class -> RobotSimRobotlessPegInHole or RobotSimRobotlessLapJoint 
-                              self_collision_enabled=True,  # collision setting for pybullet
-                              
-                              # check it between run and train mode
-                              renders=False,  # normally for running sim and rolling out in sim, this is set to True; for training, False.
-                              
-                              ft_noise=False,  # domain randomization on force/torque observation
-                              pose_noise=False,  # domain randomization on pose observation
-                              action_noise=False,  # domain randomization on actions
-                              physical_noise=False,  # domain randomization on physical parameters
-                              time_step=1./250.,  # sets the control frequency of the robot
-                              
-                              max_steps= 998, #998,  # max number of steps in each episode
-                                               # 998 for lap-joint, 3998 for peg-in-hole 
-
-                              # check it between run and train mode
-                              step_limit=True,  # limit the length of an episode by max_steps?
-                              
-                              action_dim=6,  # dimension of action space
-
-                              # 0.02 for lap-joint; 0.04 for peg-in-hole
-                              max_vel=0.02, # max linear velocity (m/s) along each axis, 
-                              max_rad=0.02, # max rotational velocity (rad/s) around each axis,
-                              
-                              ft_obs_only=True,  # only use force/torque as observation?
-                              
-                              limit_ft=False,  # limit force/torque based on max_ft?
-                              
-                              max_ft= [2500, 2500, 4000, 400, 400, 400], # [1000, 1000, 2500, 100, 100, 100],  # max force (N) and torque (Nm)
-                              max_position_range= [2]*3, # max observation space for positions (m)
-                              
-                              dist_threshold=0.001,  # an episode is considered successful when distance is within the threshold.
-                                                    # 0.005 for lap-joint, 0.01 for peg-in-hole, 0.015 for testing a straight-down policy 
-                              
-                              orn_dist_factor=0.05 # 0.05 for lap-joint and 0 for peg-in-hole
-                              )
-
-        return environment
-
-
-if t == 'pyatk':
-    from envs.pyatk_env import ATKEnv
-    def env_creator(env_config):
-
-        # initial pose for lap-joint
-        # panda:[600,0,237,0,0,0]
-        # ur10: [700,-200,370,0,0,0]
-        # kuka: [2530,0,877,0,0,0]
-
-        # initial pose for peg-in-hole
-        # panda: [0, 0, 170, 0, 0, 0]
-        # ur10: [0, 0, 170+325, 0, 0, math.radians(-33.16)]
-        # kuka: [200, 0, 170+1121, 0, 0, 0]
-
-        # vertical eval
-        # initial_pose = [600-37,0,237-37+600,0,math.radians(-90),0]# x-y-z-rx-ry-rz
-        # initial_pose = [-170+200, 0, 200+500, 0, math.radians(-90), 0]# x-y-z-rx-ry-rz
+from matplotlib import pyplot as plt
         
-        initial_pose = [2530,0,877,0,0,0]
-        # initial_pose = [2400,0,877,0,0,0]
-        # initial_pose = [0, 0, 170, 0, 0, 0]
 
-        environment = ATKEnv(robot = "kuka",
-                             task = "lap-joint",
-                             render=True,
-                             max_steps=2999,
-                             max_vel=0.02, # 0.04 for peg-in-hole, 0.02 for lap-joint
-                             max_rad=0.02, # 0.04 for peg-in-hole, 0.02 for lap-joint
-                             dist_threshold=0.002,
-                             time_step=1./250.,
-                             initial_pose=initial_pose,
-                             tool_friction=1.0,
-                             target_friction=1.0,
-                             debug_mode=False)
-        return environment 
+import robosuite
+from robosuite.utils.mjcf_utils import postprocess_model_xml
+from robosuite.environments.base import MujocoEnv
+# from robosuite.robots.single import 
 
-if t == 'robosuite':
-    import robosuite as suite
-    def env_creater(env_config):
-        pass
+
+def env_creator(demo_path: str) -> MujocoEnv:
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument(
+    #     "--folder",
+    #     type=str,
+    #     help="Path to your demonstration folder that contains the demo.hdf5 file, e.g.: "
+    #     "'path_to_assets_dir/demonstrations/YOUR_DEMONSTRATION'",
+    # ),
+    # parser.add_argument(
+    #     "--use-actions",
+    #     action="store_true",
+    # )
+    # args = parser.parse_args()
+
+    # hdf5_path = os.path.join(demo_path, "demo.hdf5")
+    f = h5py.File(demo_path, "r")
+    env_name = f["data"].attrs["env"]
+    env_info = json.loads(f["data"].attrs["env_info"])
+
+    env = robosuite.make(
+        **env_info,
+        has_renderer=False,
+        has_offscreen_renderer=True,
+        ignore_done=True,
+        use_camera_obs=True,
+        reward_shaping=True,
+        control_freq=20,
+    )
+
+    return (env, env_name, f)
+
+
+if __name__ == '__main__':
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--demo-path",
+        type=str,
+        default="../demo/demo.hdf5",
+        help="Path to your demonstration folder that contains the demo.hdf5 file, e.g.: "
+        "'path_to_assets_dir/demonstrations/YOUR_DEMONSTRATION'",
+    ),
+    parser.add_argument(
+        "--use-actions",
+        action="store_true",
+    )
+    args = parser.parse_args()
+    demo_path = args.demo_path
+
+    # test env_creator
+    env = env_creator(demo_path)
+
+    # preview env step
+    env.reset()
+    action = np.random.randn(7)
+    for i in range(100):
+        obs, reward, done, info = env.step(action)
+        # env.render()
+
+        if i == 0:
+            for key in obs.keys():
+                print(f"{key : <25} {type(obs[key])}  {np.shape(obs[key])}")
+            # NOTE: check proprio
+
+
+        # NOTE: test image and camera
+        # if i == 0:
+        #     # print(">>>", type(obs))
+        #     # print(">>>", obs.keys())
+        #     img = obs["agentview_image"]
+        #     # print(">>>", img)
+        #     plt.imsave(f"../debug/vis_env/env_camera.png", img, cmap="gray")
+        
+        # NOTE: test force and torque
+        robot = env.robots[0]
+        force, torque = robot.ee_force, robot.ee_torque
+        # print(force, torque)

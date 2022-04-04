@@ -17,6 +17,7 @@ class Sampler(ABC):
         super().__init__()
         self.config = config
         self.env = env
+        # NOTE: combine expert demo playback and sampling
         self.expert_rollouts = expert_rollouts
         self.output_dir = output_dir
 
@@ -47,12 +48,18 @@ class Sampler(ABC):
     def sample(self):
         pass
 
+    @abstractmethod
+    def _unit_sample(self):
+        pass
+
+    # TODO: change from episode-based split to sample-based split
     def split_train_test(self):
         rollout_names = [f"R{x:03d}" for x in range(self.num_expert_rollouts)]
         random.shuffle(rollout_names)
         split = int(self.num_expert_rollouts * self.config["train_test_split"])
         train_rollout_names = rollout_names[:split]
 
+        # moderate sample_codes
         if len(self.sample_codes) == 0:
             try:
                 with open(self.output_dir / "sample_codes.pkl", "rb") as f:
@@ -62,6 +69,7 @@ class Sampler(ABC):
         else:
             existing_sample_codes = self.sample_codes
         
+        # moderate pair_codes
         if len(self.pair_codes) == 0:
             try:
                 with open(self.output_dir / "pair_codes.pkl", "rb") as f:

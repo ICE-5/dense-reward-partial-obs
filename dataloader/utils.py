@@ -5,6 +5,7 @@ import torch
 import copy
 
 
+# TODO: update sample
 class Sample:
     def __init__(
         self,
@@ -18,6 +19,7 @@ class Sample:
         self.obs = obs
         self.pos = pos
         self.orn = orn
+        # QUESTION: is dist_reward still needed in sample
         self.dist_reward = dist_reward
 
 

@@ -24,6 +24,7 @@ class TemporalVariantForwardSampler(Sampler):
         super().__init__(
             config=config,
             env=env,
+            # TODO: change into robosuite output
             expert_rollouts=expert_rollouts,
             output_dir=output_dir,
         )
