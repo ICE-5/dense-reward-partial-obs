@@ -10,9 +10,10 @@ import pathlib
 from torch.utils.data import Dataset, DataLoader
 from dataloader.utils import *
 
-
-class PatialObsDataset(Dataset):
-    """ partially observable dataset"""
+# TODO: add split test train, loading samples, change name
+class DRPODataset(Dataset):
+    """DRPO dataset
+    """
 
     def __init__(self, config: dict, phase: str = "train"):
         self.config = config

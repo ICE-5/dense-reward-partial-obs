@@ -1,0 +1,69 @@
+# env
+# TODO: remove
+# env_name: "lap-joint"
+# offset: "0mm"
+
+# TODO: update
+dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NB5_CR5"
+sensor_used_in_sampling: ["ft", "depthmap"]
+
+# BEST: use demo_path to organize the environment info
+
+# GPU
+use_gpu: True                                        # set to True during training dense reward, set to False when doing inference in RD2 training
+
+# FT sample
+# ft_window_size: 8                                     # number of frame to concatenate into one observation
+# TODO: remove left append
+# left_append: False                                    # if true, left in right out (left element in seq is the most current obs); else, right in left out
+
+
+# sampling                  
+sampler: "BasicSampler"
+# BEST: change control_rate to sampling_interval
+sampling_forward: True
+sampling_interval: 500
+num_branches: 2                                       # number of samples to generate at each depth
+num_steps_per_branch: 5
+
+control_angle_goal: 15
+control_angle_start: 45
+control_angle_mid: 85
+
+
+# dataset processing
+train_test_split: 0.5
+ft_window_size: 8                                     # number of frame to concatenate into one observation
+
+
+# TODO: remove rollback related parameters
+# num_rollbacks_per_trial: 3
+# restore_threshold: 0.000005
+# num_rollbacks_final_trial: 15
+# QUESTION: will use_action affect loaded FT
+# use_action: True
+
+# specific to temporal variant sampler
+# use_history: False
+
+
+# network architecture
+architecture: 3
+ft_network_type: "MLP"                                # choose one: "MLP" / "LSTM"
+z_dim: 64                                             # try 48
+sensor_used_in_model: ["ft", "depthmap"]              # must have: "ft" , can have: "depthmap", "image". sensors used here must be contained in sensor_used_in_sampling
+
+# training
+initialize_weights: True
+batch_size: 64
+num_workers: 0
+lr: 0.0003
+weight_decay: 0.000005
+num_iters: 1000000
+log_freq: 200
+save_freq: 200
+
+# loss
+reconstruction_lambda: 0.2
+temporal_enforcement_lambda: 10.0
+
