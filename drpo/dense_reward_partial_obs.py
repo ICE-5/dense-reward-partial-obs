@@ -7,10 +7,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from models.model import *
-from dataloader.dataset import *
-from dataloader.utils import *
-from utils import *
+from drpo.models.model import *
+from drpo.dataloader.dataset import *
+from drpo.dataloader.utils import *
+from drpo.utils import *
 
 
 class DenseRewardPartialObs:
@@ -32,6 +32,7 @@ class DenseRewardPartialObs:
         self.model = PartialObsAutoEncoder(config).double().to(self.device)
 
         self.architecture = config["architecture"]
+        # BEST: is this still needed?
         self.sensors = config["sensor_used_in_model"]
         self.loss_keys = None
 
@@ -51,6 +52,7 @@ class DenseRewardPartialObs:
             ckpt = torch.load(model_params_path)
             self.model.load_state_dict(ckpt["model_state_dict"])
 
+        # TODO: what is this?
         self.prev_delta_z_sum = 0.0
 
     def train(self,) -> None:
@@ -66,9 +68,10 @@ class DenseRewardPartialObs:
         with open(self.model_log_path / f"{self.model_id}.csv", "w") as f:
             writer = csv.writer(f)
 
+        # TODO: change
         # load data
-        train_dataset = PatialObsDataset(self.config, phase="train")
-        test_dataset = PatialObsDataset(self.config, phase="test")
+        train_dataset = DRPODataset(self.config)
+        test_dataset = DRPODataset(self.config)
         train_dataloader = DataLoader(
             train_dataset,
             batch_size=self.config["batch_size"],

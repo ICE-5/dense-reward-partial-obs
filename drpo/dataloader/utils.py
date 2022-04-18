@@ -129,6 +129,7 @@ def split_test_train(codes_path: pathlib.Path, split_ratio):
         test_size = n - train_size
 
         train, test = random_split(codes, [train_size, test_size])
+        
         return train, test
 
 

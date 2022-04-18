@@ -4,6 +4,7 @@
 # offset: "0mm"
 
 # TODO: update
+data_dir: "data"
 dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NB5_CR5"
 sensor_used_in_sampling: ["ft", "depthmap"]
 
@@ -32,7 +33,7 @@ control_angle_mid: 85
 
 
 # dataset processing
-train_test_split: 0.5
+split_ratio: 0.5
 ft_window_size: 32                                     # number of frame to concatenate into one observation
 
 
