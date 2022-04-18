@@ -1,9 +1,14 @@
 import pickle
 import numpy as np
 import pathlib
+from typing import Tuple
 
 # import torch
 import copy
+from torch.utils.data import random_split
+
+import h5py
+from h5py._hl.files import File
 
 
 # TODO: remove
@@ -93,31 +98,104 @@ import copy
 
 #     return obs
 
-def get_obs_by_code(code: str) -> str:
-    pass
+
+
+
 
 def get_prev_code(code: str) -> str:
-    # branch_index, global_timestep, local_timestep
-    b, g, l = [int(i) for i in code.split(".")]
+    d, b, g, l = _process_code(code)
 
-    # if demo / stem
-    if b==0:
+    if _is_stem(code):
         if g > 1:
-            return f"{b}.{g-1}.{l-1}"
+            return f"{d}.{b}.{g-1}.{l-1}"
         else:
-            return None
-    # if sampled branches
+            raise ValueError("Found code without previous step.")
     else:
         if l > 0:
-            return f"{b}.{g-1}.{l-1}"
+            return f"{d}.{b}.{g-1}.{l-1}"
         else:
-            return f"0.{g-1}.{g-1}"
+            return f"{d}.0.{g-1}.{g-1}"
 
-def split_test_train(codes_path: pathlib.Path, out_dir):
-    pass
 
-def get_ft_window(window_size: int):
-    pass
+# TODO: remove 
+# BEST: directly split torch dataset
+def split_test_train(codes_path: pathlib.Path, split_ratio):
+    out_dir = codes_path.parents[0]
+    with open(codes_path, "rb") as p:
+        codes = pickle.load(p)
+        n = len(codes)
+
+        train_size = int(split_ratio * n)
+        test_size = n - train_size
+
+        train, test = random_split(codes, [train_size, test_size])
+        return train, test
+
+
+
+def get_ft_window_by_code(data: File, code: str, ft_window_size: int) -> np.ndarray:
+    d, b, g, l = _process_code(code)
+
+    branch_ft_arr = data[f"data/{d}/{b}/ft"]
+
+    # if possible to slice within branch
+    if l+1 > ft_window_size:
+        return branch_ft_arr[l+1-ft_window_size: l+1, :]
+    else:
+        # get part_1 from current branch
+        part_1 = branch_ft_arr[: l+1, :]
+
+        if _is_stem(code):
+            # get part_2 by padding
+            part_2 = np.zeros([ft_window_size-l-1, 6])
+            return np.concatenate([part_2, part_1], axis=0)
+        else:
+            # get part_2 from stem
+            stem_ft_arr = data[f"data/{d}/0/ft"]
+            if g+1 > ft_window_size:
+                # no need for part_3 (zero padding)
+                part_2 = stem_ft_arr[g+1-ft_window_size: g-l, :]
+                return np.concatenate([part_2, part_1], axis=0)
+            else:
+                # need part_3 (zero padding)
+                part_2 = stem_ft_arr[: g-l, :]
+                part_3 = np.zeros([ft_window_size-g-1, 6])
+                return np.concatenate([part_3, part_2, part_1], axis=0)
+    
+
+def get_obs_by_code(data: File, code: str, ft_window_size: int) -> dict:
+    obs = {}
+    d, b, _, l = _process_code(code)
+    
+    # add ft window
+    # BEST: for debugging
+    obs["code"] = code
+    obs["ft"] = get_ft_window_by_code(data, code, ft_window_size)
+    obs["action"] = data[f"data/{d}/{b}/action"][l]
+    obs["proprio"] = data[f"data/{d}/{b}/proprio"][l]
+    obs["image"] = data[f"data/{d}/{b}/image"][l]
+
+    return obs
+
+
+
+
+def to_cuda(data_dict: dict):
+    if data_dict is None:
+        return None
+    return {k: v.cuda() for (k, v) in data_dict.items()}
+
+def _is_stem(code: str) -> bool:
+    _, b, _, _ = _process_code(code)
+    return int(b)==0
+
+def _process_code(code:str) -> Tuple[str, int, int, int]:
+    d, b, g, l = code.split(".")
+    b, g, l = int(b), int(g), int(l)
+    return (d, b, g, l)
+
+
+
 
 
 
@@ -156,7 +234,4 @@ def get_ft_window(window_size: int):
 #         return processed_obs
 
 
-def to_cuda(data_dict: dict):
-    if data_dict is None:
-        return None
-    return {k: v.cuda() for (k, v) in data_dict.items()}
+

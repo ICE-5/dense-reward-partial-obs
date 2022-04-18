@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from models.model import *
-from dataloader.partial_obs_dataset import *
+from dataloader.dataset import *
 from dataloader.utils import *
 from utils import *
 

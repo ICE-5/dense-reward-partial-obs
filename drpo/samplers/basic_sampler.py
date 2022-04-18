@@ -18,45 +18,49 @@ class BasicSampler(Sampler):
 
     def _sample_step(self, **kwargs):
 
-        demo_grp = self.grp[kwargs["demo_name"]]
+        demo_name = kwargs["demo_name"]
+        demo_grp = self.grp[demo_name]
         level = kwargs["level"]
         
         for b in range(self.num_branches):
             # branch_index=0 is the stem, all sampled branches start from branch_index=1
             branch_index = level * self.num_branches + b + 1
             branch_grp = demo_grp.create_group(str(branch_index))
+            n = self.num_steps_per_branch
 
-            ft_arr = []
-            image_arr = []
-            proprio_arr = []
-            action_arr = []
-            reward_arr = []
+            ft_arr = np.zeros([n, 6])
+            image_arr = np.zeros([n, 128, 128, 3])
+            proprio_arr = np.zeros([n, 32])
+            action_arr = np.zeros([n, 7])
+            reward_arr = np.zeros(n)
 
             # TODO: test!
+            # position at branch root
             global_timestep = kwargs["global_timestep"]
             local_timestep = -1
 
-            for _ in range(self.num_steps_per_branch):
+            for j in range(n):
                 # sample randomly without control
                 action = np.random.uniform(self.action_low, self.action_high)
 
                 obs, reward, _, _ = self.env.step(action)
-                force = self.robot.ee_force
-                torque = self.robot.ee_torque
-                ft = np.concatenate([force, torque])
+                robot = self.env.robots[0]
+                force = robot.ee_force
+                torque = robot.ee_torque
 
-                # add obs to dataset
-                ft_arr.append(ft)
-                image_arr.append(obs["agentview_image"])
-                proprio_arr.append(obs["robot0_proprio-state"])
-                action_arr.append(action)
-                reward_arr.append(reward)
+                # save to dataset
+                ft_arr[j, :3] = force
+                ft_arr[j, 3:] = torque
+                image_arr[j, :, :, :] = obs["agentview_image"]
+                proprio_arr[j, :] = obs["robot0_proprio-state"]
+                action_arr[j, :] = action
+                reward_arr[j] = reward
 
                 global_timestep += 1
                 local_timestep += 1
 
                 # add code
-                code = f"{branch_index}.{global_timestep}.{local_timestep}"
+                code = f"{demo_name}.{branch_index}.{global_timestep}.{local_timestep}"
                 self.codes.append(code)
             
             # save dataset in hdf5

@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from robosuite.utils.mjcf_utils import postprocess_model_xml
 
 from drpo.envs.envs_launcher import env_creator
-from drpo.dataloader.utils import Sample
+# from drpo.dataloader.utils import Sample
 
 
 class Sampler(ABC):
@@ -23,9 +23,6 @@ class Sampler(ABC):
 
         # create env based on demo
         self.env, self.env_name = env_creator(demo_path)
-
-        # get robot
-        self.robot = self.env.robots[0]
 
         # load demo_file
         self.demo_file = h5py.File(demo_path, "r")
@@ -148,28 +145,33 @@ class Sampler(ABC):
         self.env.sim.set_state_from_flattened(states[0])
         self.env.sim.forward()
 
-        ft_arr = []
-        image_arr = []
-        proprio_arr = []
-        action_arr = []
-        reward_arr = []
+        # BEST: peel hardcode dims
+        ft_arr = np.zeros([n, 6])
+        image_arr = np.zeros([n, 128, 128, 3])
+        proprio_arr = np.zeros([n, 32])
+        action_arr = np.zeros([n, 7])
+        reward_arr = np.zeros(n)
 
         for j, action in enumerate(actions):
             obs, reward, _, _ = self.env.step(action)
-            force = self.robot.ee_force
-            torque = self.robot.ee_torque
+            robot = self.env.robots[0]
+            force = robot.ee_force
+            torque = robot.ee_torque
+
             ft = np.concatenate([force, torque])
 
             # save to dataset
-            ft_arr.append(ft)
-            image_arr.append(obs["agentview_image"])
-            proprio_arr.append(obs["robot0_proprio-state"])
-            action_arr.append(action)
-            reward_arr.append(reward)
+            ft_arr[j, :3] = force
+            ft_arr[j, 3:] = torque
+            image_arr[j, :, :, :] = obs["agentview_image"]
+            proprio_arr[j, :] = obs["robot0_proprio-state"]
+            action_arr[j, :] = action
+            reward_arr[j] = reward
 
-            # add code
-            code = f"{branch_index}.{j}.{j}"
-            self.codes.append(code)
+            # add code, skip first one for pair consideration
+            if j > 0:
+                code = f"{demo_name}.{branch_index}.{j}.{j}"
+                self.codes.append(code)
 
         # save container in hdf5
         branch_grp.create_dataset("image", data=np.array(image_arr))

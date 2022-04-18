@@ -17,10 +17,7 @@ media/
 plots/
 
 # unsync test scripts
-test_env.py
-test_sample.py
-test_sampler.py
-test_rollout.py
+tests/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

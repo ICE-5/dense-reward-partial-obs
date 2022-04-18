@@ -33,7 +33,7 @@ control_angle_mid: 85
 
 # dataset processing
 train_test_split: 0.5
-ft_window_size: 8                                     # number of frame to concatenate into one observation
+ft_window_size: 32                                     # number of frame to concatenate into one observation
 
 
 # TODO: remove rollback related parameters
