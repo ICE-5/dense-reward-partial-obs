@@ -1,6 +1,7 @@
 import pickle
 import numpy as np
 import pathlib
+import random
 from typing import Tuple
 
 # import torch
@@ -99,9 +100,6 @@ from h5py._hl.files import File
 #     return obs
 
 
-
-
-
 def get_prev_code(code: str) -> str:
     d, b, g, l = _process_code(code)
 
@@ -117,21 +115,26 @@ def get_prev_code(code: str) -> str:
             return f"{d}.0.{g-1}.{g-1}"
 
 
-# TODO: remove 
+# TODO: remove
 # BEST: directly split torch dataset
 def split_test_train(codes_path: pathlib.Path, split_ratio):
     out_dir = codes_path.parents[0]
     with open(codes_path, "rb") as p:
         codes = pickle.load(p)
         n = len(codes)
+        s = train_size = int(split_ratio * n)
 
-        train_size = int(split_ratio * n)
-        test_size = n - train_size
+        random.shuffle(codes)
+        train_codes, test_codes = codes[:s], codes[s:]
 
-        train, test = random_split(codes, [train_size, test_size])
-        
-        return train, test
-
+        pickle.dump(
+            train_codes,
+            open(out_dir / "train_codes.pkl", "wb"),
+        )
+        pickle.dump(
+            test_codes,
+            open(out_dir / "test_codes.pkl", "wb"),
+        )
 
 
 def get_ft_window_by_code(data: File, code: str, ft_window_size: int) -> np.ndarray:
@@ -140,34 +143,34 @@ def get_ft_window_by_code(data: File, code: str, ft_window_size: int) -> np.ndar
     branch_ft_arr = data[f"data/{d}/{b}/ft"]
 
     # if possible to slice within branch
-    if l+1 > ft_window_size:
-        return branch_ft_arr[l+1-ft_window_size: l+1, :]
+    if l + 1 > ft_window_size:
+        return branch_ft_arr[l + 1 - ft_window_size : l + 1, :]
     else:
         # get part_1 from current branch
-        part_1 = branch_ft_arr[: l+1, :]
+        part_1 = branch_ft_arr[: l + 1, :]
 
         if _is_stem(code):
             # get part_2 by padding
-            part_2 = np.zeros([ft_window_size-l-1, 6])
+            part_2 = np.zeros([ft_window_size - l - 1, 6])
             return np.concatenate([part_2, part_1], axis=0)
         else:
             # get part_2 from stem
             stem_ft_arr = data[f"data/{d}/0/ft"]
-            if g+1 > ft_window_size:
+            if g + 1 > ft_window_size:
                 # no need for part_3 (zero padding)
-                part_2 = stem_ft_arr[g+1-ft_window_size: g-l, :]
+                part_2 = stem_ft_arr[g + 1 - ft_window_size : g - l, :]
                 return np.concatenate([part_2, part_1], axis=0)
             else:
                 # need part_3 (zero padding)
-                part_2 = stem_ft_arr[: g-l, :]
-                part_3 = np.zeros([ft_window_size-g-1, 6])
+                part_2 = stem_ft_arr[: g - l, :]
+                part_3 = np.zeros([ft_window_size - g - 1, 6])
                 return np.concatenate([part_3, part_2, part_1], axis=0)
-    
+
 
 def get_obs_by_code(data: File, code: str, ft_window_size: int) -> dict:
     obs = {}
     d, b, _, l = _process_code(code)
-    
+
     # add ft window
     # BEST: for debugging
     obs["code"] = code
@@ -179,25 +182,21 @@ def get_obs_by_code(data: File, code: str, ft_window_size: int) -> dict:
     return obs
 
 
-
-
 def to_cuda(data_dict: dict):
     if data_dict is None:
         return None
     return {k: v.cuda() for (k, v) in data_dict.items()}
 
+
 def _is_stem(code: str) -> bool:
     _, b, _, _ = _process_code(code)
-    return int(b)==0
+    return int(b) == 0
 
-def _process_code(code:str) -> Tuple[str, int, int, int]:
+
+def _process_code(code: str) -> Tuple[str, int, int, int]:
     d, b, g, l = code.split(".")
     b, g, l = int(b), int(g), int(l)
     return (d, b, g, l)
-
-
-
-
 
 
 # def process_raw_sample_obs(
@@ -233,6 +232,3 @@ def _process_code(code:str) -> Tuple[str, int, int, int]:
 #         return {k: torch.unsqueeze(v, dim=0) for (k, v) in processed_obs.items()}
 #     else:
 #         return processed_obs
-
-
-

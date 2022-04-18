@@ -8,7 +8,7 @@ from robosuite.environments.base import MujocoEnv
 from drpo.samplers.sampler import Sampler
 
 
-class Temp(Sampler):
+class TemporalSampler(Sampler):
     def __init__(
         self,
         config: dict,
