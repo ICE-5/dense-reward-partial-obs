@@ -18,7 +18,7 @@ def parse_args():
         "--config",
         type=str,
         required=True,
-        help="path of configuration file, check drpo/configs/ for template ",
+        help="path of configuration file, check configs/ for template ",
     )
     parser.add_argument(
         "-d",
@@ -29,7 +29,7 @@ def parse_args():
     )
     parser.add_argument(
         "-o",
-        "--out-dir",
+        "--data-dir",
         type=str,
         required=True,
         help="directory of output",
@@ -47,19 +47,20 @@ def parse_args():
 
 def generate_dataset(
     config: dict,
-    sampler: Sampler,
-    demo_path: pathlib.Path,
-    out_dir: pathlib.Path,
+    demo_path: Path,
+    data_dir: Path,
     demo_names: list = None,
     split_only: bool = False,
 ):
+    
     if not split_only:
-        spl = sampler(config, demo_path, out_dir)
+        spl = exec(sampler = config["sampler"])(config, demo_path, data_dir)
+        # spl = sampler(config, demo_path, data_dir)
         spl.sample(demo_names)
 
-    codes_path = out_dir / "codes.pkl"
+    codes_path = data_dir / "codes.pkl"
     split_test_train(codes_path=codes_path, split_ratio=config["split_ratio"])
-    prGreen(f"\nSUCCESS | train and test dataset generated at: {out_dir}\n")
+    prGreen(f"\nSUCCESS | train and test dataset generated at: {data_dir}\n")
 
 
 if __name__ == "__main__":
@@ -69,9 +70,8 @@ if __name__ == "__main__":
 
     generate_dataset(
         config=config,
-        sampler=BasicSampler,
         demo_path=Path(args.demo_path),
-        out_dir=Path(args.out_dir),
+        data_dir=Path(args.data_dir),
         demo_names=[
             "demo_2",
         ],

@@ -25,7 +25,7 @@ class DRPONetwork(nn.Module):
 
         self.config = config
         self.z_dim = config["z_dim"]
-        self.sensors = config["sensor_used_in_model"]
+        self.sensors = config["sensors"]
         self.architecture = config["architecture"]
         initialize_weights = config["initialize_weights"]
 

@@ -1,27 +1,12 @@
-# env
-# TODO: remove
-# env_name: "lap-joint"
-# offset: "0mm"
-
-# TODO: update
-data_dir: "data"
-# dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NB5_CR5"
-sensor_used_in_sampling: ["ft", "depthmap", "proprio"]
-
-# BEST: use demo_path to organize the environment info
+# demo
+demo_path: "demos/demo.hdf5"
+demo_names: ["demo_1", "demo_2"]
 
 # GPU
-use_gpu: True                                        # set to True during training dense reward, set to False when doing inference in RD2 training
-
-# FT sample
-# ft_window_size: 8                                     # number of frame to concatenate into one observation
-# TODO: remove left append
-# left_append: False                                    # if true, left in right out (left element in seq is the most current obs); else, right in left out
-
+use_gpu: True
 
 # sampling                  
 sampler: "BasicSampler"
-# BEST: change control_rate to sampling_interval
 sampling_forward: True
 sampling_interval: 500
 num_branches: 2                                       # number of samples to generate at each depth
@@ -32,33 +17,22 @@ control_angle_start: 45
 control_angle_mid: 85
 
 
-# dataset processing
+# dataset
+data_dir: "data"
 split_ratio: 0.5
-ft_window_size: 32                                     # number of frame to concatenate into one observation
 
 # observation dims
-image_dim: 128
+ft_window_size: 32                                     # number of frame to concatenate into one observation
 action_dim: 7
 proprio_dim: 32
-
-# TODO: remove rollback related parameters
-# num_rollbacks_per_trial: 3
-# restore_threshold: 0.000005
-# num_rollbacks_final_trial: 15
-# QUESTION: will use_action affect loaded FT
-# use_action: True
-
-# specific to temporal variant sampler
-# use_history: False
-
+image_dim: 128
 
 # network architecture
+sensors: ["ft", "image", "proprio"]                 # must have: "ft" , can have: "image", "proprio".
 architecture: 3
 ft_network_type: "MLP"                                # choose one: "MLP" / "LSTM"
 z_dim: 64                                             # try 48
-sensor_used_in_model: ["ft", "image", "proprio"]                 # must have: "ft" , can have: "image", "proprio". sensors used here must be contained in sensor_used_in_sampling
 use_action_in_delta: True
-
 
 # training
 initialize_weights: True

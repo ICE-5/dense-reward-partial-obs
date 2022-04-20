@@ -66,7 +66,7 @@ class DRPO:
         assert self.architecture in [1, 2, 3]
 
         # sensor / modality
-        self.sensors = config["sensor_used_in_model"]
+        self.sensors = config["sensors"]
         self.ft_window_size = config["ft_window_size"]
 
         # BEST: change to better names

@@ -29,7 +29,6 @@ class Sampler(ABC):
         self.demo_names = list(self.demo_file["data"].keys())
 
         # load samping hyperparameters
-        self.sensors = config["sensor_used_in_sampling"]
         self.sampling_forward = config["sampling_forward"]
         self.sampling_interval = config["sampling_interval"]
         self.num_branches = config["num_branches"]
