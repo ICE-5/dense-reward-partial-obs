@@ -13,7 +13,7 @@ def parse_args():
         "--config",
         type=str,
         required=True,
-        help="path of configuration file, check configs/ for template ",
+        help="path of configuration file, check configs/template.yaml",
     )
     parser.add_argument(
         "--model-params-path",

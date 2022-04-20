@@ -2,33 +2,31 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from drpo.models.base_models.encoders import DepthmapEncoder, ImageEncoder, FusionNet
-from drpo.models.base_models.decoders import DepthmapDecoder, ImageDecoder
+from drpo.models.base_models.encoders import *
+from drpo.models.base_models.decoders import *
 
 
-class DRPOEncoder(nn.Module):
+class DRPONetwork(nn.Module):
     def __init__(self, config: dict) -> None:
 
         super().__init__()
 
+        # sanity check
         ft_network_type = config["ft_network_type"]
+        assert ft_network_type in ["MLP", "LSTM"]
 
-        # security check before running exec
-        if ft_network_type not in ["MLP", "LSTM"]:
-            raise ValueError("Invalid network type, dangerous input")
-        else:
-            exec(
-                f"from models.base_models.encoders import FtEncoder{ft_network_type} as FtEncoder"
-            )
-            exec(
-                f"from models.base_models.decoders import FtDecoder{ft_network_type} as FtDecoder"
-            )
+        # selective import
+        exec(
+            f"from drpo.models.base_models.encoders import FtEncoder{ft_network_type} as FtEncoder"
+        )
+        exec(
+            f"from drpo.models.base_models.decoders import FtDecoder{ft_network_type} as FtDecoder"
+        )
 
         self.config = config
         self.z_dim = config["z_dim"]
         self.sensors = config["sensor_used_in_model"]
         self.architecture = config["architecture"]
-        ft_window_size = config["ft_window_size"]
         initialize_weights = config["initialize_weights"]
 
         # there must be FT sensor to provide delta_z info
@@ -52,7 +50,9 @@ class DRPOEncoder(nn.Module):
         for sensor in self.sensors:
             if sensor == "ft":
                 params = {
-                    "ft_window_size": ft_window_size,
+                    "ft_window_size": config["ft_window_size"],
+                    "use_action_in_delta": config["use_action_in_delta"],
+                    "action_dim": config["action_dim"],
                 }
             else:
                 params = {}

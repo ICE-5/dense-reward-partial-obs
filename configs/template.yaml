@@ -36,6 +36,10 @@ control_angle_mid: 85
 split_ratio: 0.5
 ft_window_size: 32                                     # number of frame to concatenate into one observation
 
+# observation dims
+image_dim: 128
+action_dim: 7
+proprio_dim: 32
 
 # TODO: remove rollback related parameters
 # num_rollbacks_per_trial: 3
@@ -52,7 +56,9 @@ ft_window_size: 32                                     # number of frame to conc
 architecture: 3
 ft_network_type: "MLP"                                # choose one: "MLP" / "LSTM"
 z_dim: 64                                             # try 48
-sensor_used_in_model: ["ft", "image"]                 # must have: "ft" , can have: "image", "proprio". sensors used here must be contained in sensor_used_in_sampling
+sensor_used_in_model: ["ft", "image", "proprio"]                 # must have: "ft" , can have: "image", "proprio". sensors used here must be contained in sensor_used_in_sampling
+use_action_in_delta: True
+
 
 # training
 initialize_weights: True
@@ -61,8 +67,8 @@ num_workers: 0
 lr: 0.0003
 weight_decay: 0.000005
 num_iters: 1000000
-log_freq: 200
-save_freq: 200
+log_freq: 1           # 200
+save_freq: 1          # 200
 
 # loss
 reconstruction_lambda: 0.2

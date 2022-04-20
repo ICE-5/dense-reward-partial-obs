@@ -51,9 +51,10 @@ def get_prev_code(code: str) -> str:
     d, b, g, l = _process_code(code)
 
     if _is_stem(code):
-        if g > 1:
+        if g >= 1:
             return f"{d}.{b}.{g-1}.{l-1}"
         else:
+            print(code)
             raise ValueError("Found code without previous step.")
     else:
         if l > 0:
@@ -172,11 +173,11 @@ def _process_obs(obs: dict, unsqueeze: bool = False) -> dict:
     processed_obs = {}
 
     # TODO: is this transpose necessary?
-    processed_obs["ft"] = obs["ft"].T  # [ft_window_size, 6] -> [6, ft_window_size]
+    processed_obs["ft"] = obs["ft"]  # [ft_window_size, 6] -> [6, ft_window_size]
     processed_obs["action"] = obs["action"]
     processed_obs["proprio"] = obs["proprio"]
-    processed_obs["image"] = obs["image"]
-    # processed_obs["image"] = obs["image"].transpose((2, 0, 1))  # [128, 128, 3] -> [3, 128, 128]
+    # processed_obs["image"] = obs["image"]
+    processed_obs["image"] = obs["image"].transpose((2, 0, 1))  # [128, 128, 3] -> [3, 128, 128]
 
     # convert to torch tensor
     processed_obs = {k: torch.Tensor(v).double() for (k, v) in processed_obs.items()}

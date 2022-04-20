@@ -7,19 +7,24 @@ from drpo.models.base_models.layers import CausalConv1D, Flatten, conv2d
 
 
 class FtEncoderMLP(nn.Module):
-    def __init__(self, z_dim, initailize_weights=True, **kwargs):
+    def __init__(self, z_dim, initialize_weights=True, **kwargs):
         """
     FT (force/torque) encoder taken from selfsupervised code
     Input size: [batch_size, 6, ft_window_size]
     """
         super().__init__()
-        self.z_dim = z_dim
 
-        # adapt to different window size, by default use 8
-        if "ft_window_size" in kwargs.keys():
+        try:
             self.ft_window_size = kwargs["ft_window_size"]
+            use_action_in_delta = kwargs["use_action_in_delta"]
+            action_dim = kwargs["action_dim"]
+        except:
+            raise IOError("Missing essential arguments.")
+
+        if use_action_in_delta:
+            out_dim = z_dim - action_dim
         else:
-            raise IOError("Please specify FT window size in config")
+            out_dim = z_dim
 
         self.encoder = nn.Sequential(
             nn.Linear(6 * self.ft_window_size, 64),
@@ -28,11 +33,11 @@ class FtEncoderMLP(nn.Module):
             nn.LeakyReLU(0.1, inplace=True),
             nn.Linear(128, 128),
             nn.LeakyReLU(0.1, inplace=True),
-            nn.Linear(128, self.z_dim),
+            nn.Linear(128, out_dim),
             nn.LeakyReLU(0.1, inplace=True),
         )
 
-        if initailize_weights:
+        if initialize_weights:
             init_weights(self.modules())
 
     def forward(self, x):
@@ -42,7 +47,7 @@ class FtEncoderMLP(nn.Module):
 
 # TODO: craft and tune LSTM encoder
 class FtEncoderLSTM(nn.Module):
-    def __init__(self, z_dim, initailize_weights=True, **kwargs):
+    def __init__(self, z_dim, initialize_weights=True, **kwargs):
         """
     FT (force/torque) encoder taken from selfsupervised code
     Input size: [batch_size, 6, ft_window_size]
@@ -56,11 +61,11 @@ class FtEncoderLSTM(nn.Module):
             batch_first=True,
         )
 
-        if initailize_weights:
+        if initialize_weights:
             init_weights(self.modules())
 
     def forward(self, x):
-        x = torch.transpose(x, 1, 2)
+        # x = torch.transpose(x, 1, 2)
         # shape before piping into LSTM: [batch_size, ft_window_size, 6]
         _, (out, _) = self.encoder(x)
         # output should be [batch_size, z_dim]
@@ -68,10 +73,10 @@ class FtEncoderLSTM(nn.Module):
 
 
 class ImageEncoder(nn.Module):
-    def __init__(self, z_dim, initailize_weights=True, **kwargs):
+    def __init__(self, z_dim, initialize_weights=True, **kwargs):
         """
     Image encoder taken from Making Sense of Vision and Touch
-    Input size: [batch_size, 128, 128, 3]
+    Input size: [batch_size, num_channels, H, W]
     """
         super().__init__()
         self.z_dim = z_dim
@@ -87,7 +92,7 @@ class ImageEncoder(nn.Module):
             nn.Linear(4 * self.z_dim, self.z_dim),
         )
 
-        if initailize_weights:
+        if initialize_weights:
             init_weights(self.modules())
 
     def forward(self, x):
@@ -96,10 +101,10 @@ class ImageEncoder(nn.Module):
 
 
 class DepthmapEncoder(nn.Module):
-    def __init__(self, z_dim, initailize_weights=True, **kwargs):
+    def __init__(self, z_dim, initialize_weights=True, **kwargs):
         """
     Simplified Depthmap Encoder taken from Making Sense of Vision and Touch
-    Input size: [batch_size, 128, 128, 1]
+    Input size: [batch_size, num_channels, H, W]
     """
         super().__init__()
         self.z_dim = z_dim
@@ -115,7 +120,7 @@ class DepthmapEncoder(nn.Module):
             nn.Linear(4 * self.z_dim, self.z_dim),
         )
 
-        if initailize_weights:
+        if initialize_weights:
             init_weights(self.modules())
 
     def forward(self, x):
@@ -124,7 +129,7 @@ class DepthmapEncoder(nn.Module):
 
 
 class ProprioEncoder(nn.Module):
-    def __init__(self, z_dim, initailize_weights=True):
+    def __init__(self, z_dim, initialize_weights=True):
         """
     Proprio encoder taken from selfsupervised code
     Input size: [batch_size, 32]
@@ -147,7 +152,7 @@ class ProprioEncoder(nn.Module):
             nn.LeakyReLU(0.1, inplace=True),
         )
 
-        if initailize_weights:
+        if initialize_weights:
             init_weights(self.modules())
 
     def forward(self, x):
@@ -155,7 +160,7 @@ class ProprioEncoder(nn.Module):
 
 
 class FusionNet(nn.Module):
-    def __init__(self, concat_z_dim, output_z_dim, initailize_weights=True):
+    def __init__(self, concat_z_dim, output_z_dim, initialize_weights=True):
         super().__init__()
 
         self.fusion_net = nn.Sequential(
@@ -167,7 +172,7 @@ class FusionNet(nn.Module):
             nn.LeakyReLU(0.1, inplace=True),
         )
 
-        if initailize_weights:
+        if initialize_weights:
             init_weights(self.modules())
 
     def forward(self, x):

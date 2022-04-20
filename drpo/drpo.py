@@ -1,5 +1,8 @@
 import csv
-import datetime
+import h5py
+import numpy as np
+import pathlib
+import pickle
 
 import torch
 import torch.nn as nn
@@ -7,10 +10,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from drpo.models.model import *
-from drpo.dataloader.dataset import *
-from drpo.dataloader.utils import *
-from drpo.utils import *
+from drpo.models.model import DRPONetwork
+from drpo.dataloader.dataset import DRPODataset
+from drpo.dataloader.utils import to_cuda, get_demo_endpoint_code, get_obs_by_code
+# from drpo.utils import 
 
 
 class DRPO:
@@ -31,7 +34,7 @@ class DRPO:
 
         # model
         self.model_id = model_id
-        self.model = DRPO(config).double().to(self.device)
+        self.model = DRPONetwork(config).double().to(self.device)
 
         # dataset
         self.data_dir = pathlib.Path(config["data_dir"])
@@ -58,7 +61,7 @@ class DRPO:
             num_workers=config["num_workers"],
         )
 
-        # architecture
+        # architecture sanity check
         self.architecture = config["architecture"]
         assert self.architecture in [1, 2, 3]
 
@@ -77,7 +80,7 @@ class DRPO:
                     self.model_id = tmp_model_id
             except Exception:
                 print(
-                    ">>>>> please try to provide a model id for distinguishing logging and plotting"
+                    ">>>>> Provide model_id to identify logging and plotting"
                 )
                 self.model_id = "test"
 
@@ -113,6 +116,7 @@ class DRPO:
             weight_decay=self.config["weight_decay"],
         )
 
+        print("Training started")
         iters, epoch = 0, 0
         while iters < self.config["num_iters"]:
             epoch += 1
