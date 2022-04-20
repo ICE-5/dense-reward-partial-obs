@@ -172,7 +172,6 @@ def _process_code(code: str) -> Tuple[str, int, int, int]:
 def _process_obs(obs: dict, unsqueeze: bool = False) -> dict:
     processed_obs = {}
 
-    # TODO: is this transpose necessary?
     processed_obs["ft"] = obs["ft"]  # [ft_window_size, 6] -> [6, ft_window_size]
     processed_obs["action"] = obs["action"]
     processed_obs["proprio"] = obs["proprio"]

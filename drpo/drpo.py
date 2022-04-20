@@ -144,6 +144,7 @@ class DRPO:
                 decoded_curr = {}
 
                 if self.architecture == 1:
+                    # decode ft and other sensors
                     for sensor in self.sensors:
                         if sensor == "ft":
                             decoded_prev[sensor] = self.model.decode(
@@ -157,6 +158,7 @@ class DRPO:
                             decoded_curr[sensor] = self.model.decode(z_curr, sensor)
 
                 else:
+                    # only decode other sensors, not FT
                     for sensor in self.sensors:
                         if sensor != "ft":
                             decoded_prev[sensor] = self.model.decode(z_prev, sensor)
