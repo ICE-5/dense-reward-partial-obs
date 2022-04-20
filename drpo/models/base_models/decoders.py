@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
-from models.models_utils import init_weights
-from models.base_models.layers import (
+
+from drpo.models.models_utils import init_weights
+from drpo.models.base_models.layers import (
     conv2d,
     deconv,
 )

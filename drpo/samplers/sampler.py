@@ -57,6 +57,20 @@ class Sampler(ABC):
 
         # sample
         for demo_name in demo_names:
+            # create group per each demo
+            self.grp.create_group(demo_name)
+
+            # reset env per demo
+            self.env.reset()
+            model_xml = self.demo_file[f"data/{demo_name}"].attrs["model_file"]
+            xml = postprocess_model_xml(model_xml)
+            self.env.reset_from_xml_string(xml)
+            self.env.sim.reset()
+
+            # record demo
+            self.record_demo(demo_name)
+
+            # sample_demo
             self._sample_demo(demo_name)
 
         # save and close file
@@ -72,18 +86,8 @@ class Sampler(ABC):
         - forward / backward sampling
         - sampling interval (# of steps to skip between sampling)
         """
-        # create group per each demo
-        self.grp.create_group(demo_name)
-
-        # reset env per demo
-        self.env.reset()
-        model_xml = self.demo_file[f"data/{demo_name}"].attrs["model_file"]
-        xml = postprocess_model_xml(model_xml)
-        self.env.reset_from_xml_string(xml)
-        self.env.sim.reset()
-
         # record demo
-        states = self._record_demo(demo_name)
+        states = self.demo_file[f"data/{demo_name}/states"][()]
         n = len(states)
 
         # get steps to sample
@@ -119,7 +123,7 @@ class Sampler(ABC):
         self.env.sim.forward()
 
     # TODO: currently use last state of episode as done
-    def _record_demo(self, demo_name):
+    def record_demo(self, demo_name):
         """Store a demo episode's FT, image, proprio, action as branch in data.hdf5
 
         Args:
@@ -133,7 +137,7 @@ class Sampler(ABC):
         states = self.demo_file[f"data/{demo_name}/states"][()]
         actions = self.demo_file[f"data/{demo_name}/actions"][()]
         n = len(states)
-        print(n)
+        # print(n)
 
         # get demo droup in data
         demo_grp = self.grp[demo_name]
@@ -180,4 +184,4 @@ class Sampler(ABC):
         branch_grp.create_dataset("action", data=np.array(action_arr))
         branch_grp.create_dataset("reward", data=np.array(reward_arr))
 
-        return states
+        # return states

@@ -11,100 +11,18 @@ import torch
 from h5py._hl.files import File
 
 
-# TODO: remove
-# class Sample:
-#     def __init__(
-#         self,
-#         action: np.ndarray or None = None,
-#         obs: dict = {},
-#         pos: np.ndarray or None = None,
-#         orn: np.ndarray or None = None,
-#         dist_reward: float or None = None,
-#     ) -> None:
-#         self.action = action
-#         self.obs = obs
-#         self.pos = pos
-#         self.orn = orn
-#         # QUESTION: is dist_reward still needed in sample
-#         self.dist_reward = dist_reward
+def split_test_train(codes_path: pathlib.Path, split_ratio: float):
+    """Sample-wise split. Potentially mixing multiple demos
 
-# TODO: implement
-# BEST: remove to save space
-# class Sample:
-#     def __init__(self, branch_index, global_timestep, local_timestep, prev=None) -> None:
-#         self.branch_index = branch_index
-#         self.global_timestep = global_timestep  # sample's index in the stem / universal frame
-#         self.local_timestep = local_timestep  # sample's index within the branch frame
-#         self.prev = prev
-
-
-# class FTWindow:
-#     def __init__(self, initial_value: np.ndarray) -> None:
-#         self.window = copy.deepcopy(initial_value)
-
-#     def update(self, new_ft: np.ndarray or list) -> None:
-#         try:
-#             self.window[1:, :] = self.window[:-1, :]
-#             self.window[0, :] = new_ft
-
-#         except ValueError:
-#             print("invalid update, check dimension of new_ft")
-
-#     def rollback(
-#         self,
-#     ) -> None:
-#         self.window[:-1, :] = self.window[1:, :]
-#         self.window[-1, :] = 0.0
-
-#     def insert(self, new_ft: np.ndarray or list, index: int) -> None:
-#         try:
-#             self.window[index, :] = new_ft
-
-#         except IndexError:
-#             print("invalid index for insertion")
-#         except ValueError:
-#             print("invalid update, check dimension of new_ft")
-
-
-# TODO: refactor
-# def get_obs_by_code(config: dict, sample_code: str) -> dict:
-#     """Retrieve processed observation by sample code
-
-#     Args:
-#         config (dict): configuration
-#         sample_code (str): identifier string for each sample, e.g. R000.D001.expert (rollout #0, depth #1, expert sample)
-
-#     Returns:
-#         dict: processed observation, key being name of used sensors, also including depth
-#     """
-#     rollout_name, branch_name, sample_name = sample_code.split(".")
-
-#     dataset_dir = (
-#         config["data_dir"]
-#         / config["env_name"]
-#         / config["offset"]
-#         / config["dataset_name"]
-#     )
-
-#     raw_obs = {}
-#     for sensor in config["sensor_used_in_model"]:
-#         with open(
-#             dataset_dir / rollout_name / branch_name / f"{sensor}.pkl",
-#             "rb",
-#         ) as f:
-#             raw_obs[sensor] = pickle.load(f)[sample_name]
-
-#     obs = process_raw_sample_obs(config, raw_obs)
-
-#     return obs
-
-# TODO: remove
-def split_test_train(codes_path: pathlib.Path, split_ratio):
+    Args:
+        codes_path (pathlib.Path): upstream sampled codes
+        split_ratio (float): train-test split ratio
+    """    
     out_dir = codes_path.parents[0]
     with open(codes_path, "rb") as p:
         codes = pickle.load(p)
         n = len(codes)
-        s = train_size = int(split_ratio * n)
+        s = int(split_ratio * n)
 
         random.shuffle(codes)
         train_codes, test_codes = codes[:s], codes[s:]
@@ -117,6 +35,16 @@ def split_test_train(codes_path: pathlib.Path, split_ratio):
             test_codes,
             open(out_dir / "test_codes.pkl", "wb"),
         )
+
+# TODO: TBA. for generalization purposes
+def split_test_train_2(codes_path: pathlib.Path, split_ratio:float=0.5):
+    """Demo-wise split. E.g., one demo will be used for training, another one will be used for testing.
+
+    Args:
+        codes_path (pathlib.Path): upstream sampled codes
+        split_ratio (float, optional): train-test split ratio. Defaults to 0.5.
+    """    
+    pass
 
 
 def get_prev_code(code: str) -> str:
@@ -165,7 +93,10 @@ def get_ft_window_by_code(data: File, code: str, ft_window_size: int) -> np.ndar
 
 
 def get_obs_by_code(
-    data: File, code: str, ft_window_size: int, unsqueeze: bool = False
+    data: File,
+    code: str,
+    ft_window_size: int,
+    unsqueeze: bool = False,
 ) -> dict:
     obs = {}
     d, b, _, l = _process_code(code)
@@ -175,14 +106,21 @@ def get_obs_by_code(
     obs["proprio"] = data[f"data/{d}/{b}/proprio"][l]
     obs["image"] = data[f"data/{d}/{b}/image"][l]
 
+    # COMMENT OFF: for debug and eval
+    obs["code"] = code
+    obs["reward"] = data[f"data/{d}/{b}/reward"][l]
+
     return _process_obs(obs=obs, unsqueeze=unsqueeze)
 
 
-def get_demo_endpoint_code(codes: list, endpoint_type="init") -> str:
-    """Assume all codes are generated from the same demo
+def get_demo_endpoint_code(
+    codes: list, demo_name: str, endpoint_type: str = "init"
+) -> str:
+    """Get a demo's endpoint (init or goal) code
 
     Args:
         codes (list): sample codes
+        demo_name (str): name of the demo
         endpoint_type (str, optional): eiter "init" or "goal". Defaults to "init".
 
     Raises:
@@ -192,14 +130,25 @@ def get_demo_endpoint_code(codes: list, endpoint_type="init") -> str:
         str: endpoint code
     """
     if endpoint_type == "init":
-        d, _, _, _ = codes[0].split(".")
-        return f"{d}.0.0.0"
+        return f"{demo_name}.0.0.0"
     elif endpoint_type == "goal":
         return max(
-            codes, key=lambda x: int(x.split(".")[2]) if x.split(".")[1] == "0" else 0
+            codes,
+            key=lambda x: int(x.split(".")[2])
+            if (x.split(".")[1] == "0" and x.split(".")[0] == demo_name)
+            else 0,
         )
     else:
         raise ValueError("Invalid endpoint type provided.")
+
+
+def get_demo_codes_by_name(codes: list, demo_name: str) -> list:
+    demo_codes = [
+        code
+        for code in codes
+        if (code.split(".")[1] == "0" and code.split(".")[0] == demo_name)
+    ]
+    return sorted(demo_codes, key=lambda x: int(x.split(".")[2]))
 
 
 def to_cuda(data_dict: dict):

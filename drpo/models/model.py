@@ -2,8 +2,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from models.base_models.encoders import DepthmapEncoder, ImageEncoder, FusionNet
-from models.base_models.decoders import DepthmapDecoder, ImageDecoder
+from drpo.models.base_models.encoders import DepthmapEncoder, ImageEncoder, FusionNet
+from drpo.models.base_models.decoders import DepthmapDecoder, ImageDecoder
 
 
 class DRPOEncoder(nn.Module):

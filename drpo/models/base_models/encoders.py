@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 from torch.nn.modules import dropout
-from models.models_utils import init_weights
-from models.base_models.layers import CausalConv1D, Flatten, conv2d
+
+from drpo.models.models_utils import init_weights
+from drpo.models.base_models.layers import CausalConv1D, Flatten, conv2d
 
 
 class FtEncoderMLP(nn.Module):

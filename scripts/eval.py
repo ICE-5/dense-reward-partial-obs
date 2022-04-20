@@ -1,9 +1,16 @@
 import argparse
+from matplotlib.pyplot import draw_if_interactive
 import yaml
 import pickle
 import csv
+import h5py
+from pathlib import Path
+from h5py._hl.files import File
 
 import numpy as np
+
+from drpo.drpo import DRPO
+from drpo.dataloader.utils import *
 
 # from process_rollouts import process_rollouts
 # from utils import *
@@ -20,13 +27,13 @@ def parse_args():
         required=True,
         help="path of configuration file, check configs/ for template ",
     )
-    parser.add_argument(
-        "-n",
-        "--expert-rollouts-name",
-        type=str,
-        required=True,
-        help="name of expert rollouts, e.g., expert_fd",
-    )
+    # parser.add_argument(
+    #     "-n",
+    #     "--expert-rollouts-name",
+    #     type=str,
+    #     required=True,
+    #     help="name of expert rollouts, e.g., expert_fd",
+    # )
     parser.add_argument(
         "-m",
         "--model-params-path",
@@ -46,27 +53,46 @@ def parse_args():
     return args
 
 
-def eval_rollout(model: DenseRewardPartialObs, rollout: list, use_delta: bool = False) -> tuple:
-    dense_rewards, dist_rewards = [], []
+def eval_reward(model: DRPO, data_path: Path, codes_path: Path, demo_name: str) -> list:
+    data = h5py.File(data_path, "r")
+    with open(codes_path, "rb") as p:
+        codes = pickle.load(p)
+    demo_codes = get_demo_codes_by_name(codes, demo_name)
 
-    for step, sample in enumerate(rollout):
-        raw_obs = sample.obs
+    dense_reward_arr = []
+    original_reward_arr = data[f"data/{demo_name}/0/reward"][()]
+    for code in demo_codes:
+        obs = get_obs_by_code(
+            data=data, code=code, ft_window_size=model.ft_window_size, unsqueeze=True
+        )
+        dense_reward = model.predict_reward(obs)
+        dense_reward_arr.append(dense_reward)
+    return dense_reward_arr, original_reward_arr
 
-        if use_delta and step == 0:
-            model.prev_delta_z_sum = 0.0
 
-        dense_reward = model.predict_reward(raw_obs, use_delta)
-        dist_reward = sample.dist_reward
-        dense_rewards.append(dense_reward)
-        dist_rewards.append(dist_reward)
+# def eval_rollout(
+#     model: DenseRewardPartialObs, rollout: list, use_delta: bool = False
+# ) -> tuple:
+#     dense_rewards, dist_rewards = [], []
 
-        # if step % 100 == 0 or step == len(rollout) - 1:
-        if step == len(rollout) - 1:
-            print(
-                f"step: {step:5d},\trolllout length: {len(rollout)}\tdistance reward: {dist_reward:5f},\tdense reward: {dense_reward:5f}"
-            )
+#     for step, sample in enumerate(rollout):
+#         raw_obs = sample.obs
 
-    return dense_rewards, dist_rewards
+#         if use_delta and step == 0:
+#             model.prev_delta_z_sum = 0.0
+
+#         dense_reward = model.predict_reward(raw_obs, use_delta)
+#         dist_reward = sample.dist_reward
+#         dense_rewards.append(dense_reward)
+#         dist_rewards.append(dist_reward)
+
+#         # if step % 100 == 0 or step == len(rollout) - 1:
+#         if step == len(rollout) - 1:
+#             print(
+#                 f"step: {step:5d},\trolllout length: {len(rollout)}\tdistance reward: {dist_reward:5f},\tdense reward: {dense_reward:5f}"
+#             )
+
+#     return dense_rewards, dist_rewards
 
 
 if __name__ == "__main__":
@@ -74,35 +100,36 @@ if __name__ == "__main__":
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    storage_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
-    expert_rollouts_name = pathlib.Path(args.expert_rollouts_name).stem
+    # storage_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
+    # expert_rollouts_name = pathlib.Path(args.expert_rollouts_name).stem
 
-    with open(
-        storage_dir
-        / f"processed_{expert_rollouts_name}_{config['ft_window_size']}_best.pkl",
-        "rb",
-    ) as f:
-        expert_rollout = pickle.load(f)
+    # with open(
+    #     storage_dir
+    #     / f"processed_{expert_rollouts_name}_{config['ft_window_size']}_best.pkl",
+    #     "rb",
+    # ) as f:
+    #     expert_rollout = pickle.load(f)
 
-    # load successful rollout indices
-    with open(storage_dir / f"{expert_rollouts_name}.csv") as f:
-        reader = csv.reader(f, delimiter=",")
-        for row in reader:
-            selected_rollout_indices = row
-    succ_rollout_indices = [int(x) for x in selected_rollout_indices]
+    # # load successful rollout indices
+    # with open(storage_dir / f"{expert_rollouts_name}.csv") as f:
+    #     reader = csv.reader(f, delimiter=",")
+    #     for row in reader:
+    #         selected_rollout_indices = row
+    # succ_rollout_indices = [int(x) for x in selected_rollout_indices]
 
-    # prepare rollouts for eval
-    rollouts = process_rollouts(
-        config,
-        raw_expert_rollouts_path=storage_dir / f"{expert_rollouts_name}.pkl",
-        sort_by_length=False,
-    )
+    # # prepare rollouts for eval
+    # rollouts = process_rollouts(
+    #     config,
+    #     raw_expert_rollouts_path=storage_dir / f"{expert_rollouts_name}.pkl",
+    #     sort_by_length=False,
+    # )
 
     # load model
-    drpo = DenseRewardPartialObs(
-        config=config, model_params_path=args.model_params_path
-    )
-    drpo.set_expert_demo(expert_rollout=expert_rollout)
+    model = DRPO(config=config, model_id=None, model_params_path=args.model_params_path)
+    model.set_init_goal_reference(demo_name="demo_2")
+
+    data = h5py.File(data_dir / "data.hdf5", "r")
+    reward_arr = eval_reward()
 
     save_dir = pathlib.Path("media") / drpo.model_id / "vis_reward"
     save_dir.mkdir(parents=True, exist_ok=True)

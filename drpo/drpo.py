@@ -293,16 +293,18 @@ class DRPO:
                 if iters > self.config["num_iters"]:
                     break
 
-    def set_expert_demo(
-        self,
-    ) -> None:
+    def set_init_goal_reference(self, demo_name: str) -> None:
         # load code and data
         with open(self.data_dir / "codes.pkl", "rb") as p:
             codes = pickle.load(p)
         data = h5py.File(self.data_dir / "data.hdf5", "r")
 
-        init_code = get_demo_endpoint_code(codes, endpoint_type="init")
-        goal_code = get_demo_endpoint_code(codes, endpoint_type="goal")
+        init_code = get_demo_endpoint_code(
+            codes, demo_name=demo_name, endpoint_type="init"
+        )
+        goal_code = get_demo_endpoint_code(
+            codes, demo_name=demo_name, endpoint_type="goal"
+        )
 
         obs_init = get_obs_by_code(
             data=data,
@@ -333,7 +335,6 @@ class DRPO:
             # squeeze for consistency
             self.z_init = torch.squeeze(self.z_init)
             self.z_goal = torch.squeeze(self.z_goal)
-
 
     def predict_reward(self, obs: dict, use_delta: bool = False) -> float:
         # obs = process_raw_sample_obs(self.config, raw_obs, unsqueeze=True)
