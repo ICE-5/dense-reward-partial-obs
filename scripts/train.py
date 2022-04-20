@@ -3,7 +3,7 @@ import pathlib
 import yaml
 from datetime import datetime
 
-from dense_reward_partial_obs import DenseRewardPartialObs
+from drpo.drpo import DRPO
 
 
 def parse_args():
@@ -32,10 +32,8 @@ if __name__ == "__main__":
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
-    config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
-
     model_id = datetime.now().strftime("%m%d%Y-%H%M%S")
-    drpo = DenseRewardPartialObs(
-        config, model_id=model_id, model_params_path=args.model_params_path
+    drpo = DRPO(
+        config=config, model_id=model_id, model_params_path=args.model_params_path
     )
     drpo.train()

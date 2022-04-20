@@ -11,7 +11,7 @@ class FtDecoderMLP(nn.Module):
     def __init__(self, z_dim, initialize_weights=True, **kwargs):
         """
     FT (force/torque) decoder
-    input: n*z_dim
+    Output size: []
     """
         super().__init__()
         self.z_dim = z_dim
@@ -46,7 +46,7 @@ class FtDecoderLSTM(nn.Module):
     def __init__(self, z_dim, initialize_weights=True, **kwargs):
         """
     FT (force/torque) decoder
-    input: n*z_dim
+    Output size: []
     """
         super().__init__()
         self.z_dim = z_dim
@@ -164,36 +164,36 @@ class DepthmapDecoder(nn.Module):
         return out
 
 
-# class ProprioDecoder(nn.Module):
-#     def __init__(self, z_dim, initialize_weights=True):
-#         """
-#     Decodes the proprio.
-#     input size: n*z_dim
-#     """
-#         super().__init__()
+class ProprioDecoder(nn.Module):
+    def __init__(self, z_dim, initialize_weights=True):
+        """
+    Decodes the proprio.
+    input size: n*z_dim
+    """
+        super().__init__()
 
-#         self.z_dim = z_dim
+        self.z_dim = z_dim
 
-#         self.proprio_decoder = nn.Sequential(
-#             nn.Linear(self.z_dim, 64),
-#             # nn.Dropout(0.5),
-#             nn.LeakyReLU(0.1, inplace=True),
-#             nn.Linear(64, 32),
-#             # nn.Dropout(0.5),
-#             nn.LeakyReLU(0.1, inplace=True),
-#             nn.Linear(32, 6),
-#             # nn.Dropout(0.5),
-#             nn.LeakyReLU(0.1, inplace=True),
-#         )
+        self.proprio_decoder = nn.Sequential(
+            nn.Linear(self.z_dim, 64),
+            # nn.Dropout(0.5),
+            nn.LeakyReLU(0.1, inplace=True),
+            nn.Linear(64, 32),
+            # nn.Dropout(0.5),
+            nn.LeakyReLU(0.1, inplace=True),
+            nn.Linear(32, 32),
+            # nn.Dropout(0.5),
+            nn.LeakyReLU(0.1, inplace=True),
+        )
 
-#         if initialize_weights:
-#             init_weights(self.modules())
+        if initialize_weights:
+            init_weights(self.modules())
 
-#     def forward(self, z):
-#         """
-#     Predicts the proprio.
+    def forward(self, z):
+        """
+    Predicts the proprio.
 
-#     Args:
-#         z: hidden state
-#     """
-#         return self.proprio_decoder(z)
+    Args:
+        z: hidden state
+    """
+        return self.proprio_decoder(z)

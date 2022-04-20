@@ -5,10 +5,10 @@ import csv
 
 import numpy as np
 
-from process_rollouts import process_rollouts
-from utils import *
+# from process_rollouts import process_rollouts
+# from utils import *
 
-from dense_reward_partial_obs import DenseRewardPartialObs
+# from dense_reward_partial_obs import DenseRewardPartialObs
 
 
 def parse_args():
@@ -73,8 +73,6 @@ if __name__ == "__main__":
     args = parse_args()
     with open(args.config) as f:
         config = yaml.safe_load(f)
-
-    config["data_dir"] = pathlib.Path(__file__).resolve().parent / "data"
 
     storage_dir = config["data_dir"] / config["env_name"] / config["offset"] / "rd2"
     expert_rollouts_name = pathlib.Path(args.expert_rollouts_name).stem

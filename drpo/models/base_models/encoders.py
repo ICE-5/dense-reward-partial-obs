@@ -18,7 +18,7 @@ class FtEncoderMLP(nn.Module):
         if "ft_window_size" in kwargs.keys():
             self.ft_window_size = kwargs["ft_window_size"]
         else:
-            raise ValueError("please specify FT window size in config")
+            raise IOError("Please specify FT window size in config")
 
         self.encoder = nn.Sequential(
             nn.Linear(6 * self.ft_window_size, 64),
@@ -60,7 +60,7 @@ class FtEncoderLSTM(nn.Module):
 
     def forward(self, x):
         x = torch.transpose(x, 1, 2)
-        # shape efore piping into LSTM: [batch_size, ft_window_size, 6]
+        # shape before piping into LSTM: [batch_size, ft_window_size, 6]
         _, (out, _) = self.encoder(x)
         # output should be [batch_size, z_dim]
         return out.squeeze(0)
@@ -122,35 +122,35 @@ class DepthmapEncoder(nn.Module):
         return out
 
 
-# class ProprioEncoder(nn.Module):
-#     def __init__(self, z_dim, initailize_weights=True):
-#         """
-#     Proprio encoder taken from selfsupervised code
-#     input size: n*12
-#     """
-#         super().__init__()
-#         self.z_dim = z_dim
+class ProprioEncoder(nn.Module):
+    def __init__(self, z_dim, initailize_weights=True):
+        """
+    Proprio encoder taken from selfsupervised code
+    Input size: [batch_size, 32]
+    """
+        super().__init__()
+        self.z_dim = z_dim
 
-#         self.encoder = nn.Sequential(
-#             nn.Linear(6, 32),
-#             # nn.Dropout(0.5),
-#             nn.LeakyReLU(0.1, inplace=True),
-#             nn.Linear(32, 64),
-#             # nn.Dropout(0.5),
-#             nn.LeakyReLU(0.1, inplace=True),
-#             nn.Linear(64, 64),
-#             # nn.Dropout(0.5),
-#             nn.LeakyReLU(0.1, inplace=True),
-#             nn.Linear(64, self.z_dim),
-#             # nn.Dropout(0.5),
-#             nn.LeakyReLU(0.1, inplace=True),
-#         )
+        self.encoder = nn.Sequential(
+            nn.Linear(32, 32),
+            # nn.Dropout(0.5),
+            nn.LeakyReLU(0.1, inplace=True),
+            nn.Linear(32, 64),
+            # nn.Dropout(0.5),
+            nn.LeakyReLU(0.1, inplace=True),
+            nn.Linear(64, 64),
+            # nn.Dropout(0.5),
+            nn.LeakyReLU(0.1, inplace=True),
+            nn.Linear(64, self.z_dim),
+            # nn.Dropout(0.5),
+            nn.LeakyReLU(0.1, inplace=True),
+        )
 
-#         if initailize_weights:
-#             init_weights(self.modules())
+        if initailize_weights:
+            init_weights(self.modules())
 
-#     def forward(self, x):
-#         return self.encoder(x)
+    def forward(self, x):
+        return self.encoder(x)
 
 
 class FusionNet(nn.Module):

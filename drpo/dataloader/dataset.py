@@ -1,9 +1,6 @@
 import h5py
-import numpy as np
-import pathlib
 from pathlib import Path
 import pickle
-import torch
 import yaml
 from typing import *
 
@@ -41,7 +38,7 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     data_path = Path("data/data.hdf5")
-    codes_path = Path("data/codes.pkl")
+    codes_path = Path("data/train_codes.pkl")
 
     dataset = DRPODataset(config=config, data_path=data_path, codes_path=codes_path)
 
@@ -49,10 +46,10 @@ if __name__ == "__main__":
     dataloader = DataLoader(dataset, batch_size=12, shuffle=True, num_workers=4)
     for batch_idx, batch_samples in enumerate(dataloader):
         print(f"batch id: {batch_idx}")
-        print("samples curr: \n", batch_samples["obs_curr"]["code"])
-        print("samples prev: \n", batch_samples["obs_prev"]["code"])
-        # print("samples FT: ", batch_samples["obs_curr"]["ft"].shape)
-        # print("samples action: ", batch_samples["obs_curr"]["action"].shape)
-        import pdb
-
-        pdb.set_trace()
+        # print("samples curr: \n", batch_samples["obs_curr"]["code"])
+        # print("samples prev: \n", batch_samples["obs_prev"]["code"])
+        print("samples FT: ", batch_samples["obs_curr"]["ft"].shape)
+        print("samples action: ", batch_samples["obs_curr"]["action"].shape)
+        print("samples FT: ", batch_samples["obs_curr"]["proprio"].shape)
+        print("samples FT: ", batch_samples["obs_curr"]["image"].shape)
+        import pdb; pdb.set_trace()

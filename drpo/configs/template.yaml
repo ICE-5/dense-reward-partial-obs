@@ -5,8 +5,8 @@
 
 # TODO: update
 data_dir: "data"
-dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NB5_CR5"
-sensor_used_in_sampling: ["ft", "depthmap"]
+# dataset_name: "LAP_PYBULLET_0mm_TVFS_FD_WS8_NR2_NB5_CR5"
+sensor_used_in_sampling: ["ft", "depthmap", "proprio"]
 
 # BEST: use demo_path to organize the environment info
 
@@ -52,7 +52,7 @@ ft_window_size: 32                                     # number of frame to conc
 architecture: 3
 ft_network_type: "MLP"                                # choose one: "MLP" / "LSTM"
 z_dim: 64                                             # try 48
-sensor_used_in_model: ["ft", "depthmap"]              # must have: "ft" , can have: "depthmap", "image". sensors used here must be contained in sensor_used_in_sampling
+sensor_used_in_model: ["ft", "image"]                 # must have: "ft" , can have: "image", "proprio". sensors used here must be contained in sensor_used_in_sampling
 
 # training
 initialize_weights: True

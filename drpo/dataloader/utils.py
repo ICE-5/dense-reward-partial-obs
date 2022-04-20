@@ -1,14 +1,13 @@
 import pickle
 import numpy as np
+import math
 import pathlib
 import random
 from typing import Tuple
 
-# import torch
-import copy
-from torch.utils.data import random_split
+import torch
 
-import h5py
+# import h5py
 from h5py._hl.files import File
 
 
@@ -99,24 +98,7 @@ from h5py._hl.files import File
 
 #     return obs
 
-
-def get_prev_code(code: str) -> str:
-    d, b, g, l = _process_code(code)
-
-    if _is_stem(code):
-        if g > 1:
-            return f"{d}.{b}.{g-1}.{l-1}"
-        else:
-            raise ValueError("Found code without previous step.")
-    else:
-        if l > 0:
-            return f"{d}.{b}.{g-1}.{l-1}"
-        else:
-            return f"{d}.0.{g-1}.{g-1}"
-
-
 # TODO: remove
-# BEST: directly split torch dataset
 def split_test_train(codes_path: pathlib.Path, split_ratio):
     out_dir = codes_path.parents[0]
     with open(codes_path, "rb") as p:
@@ -135,6 +117,21 @@ def split_test_train(codes_path: pathlib.Path, split_ratio):
             test_codes,
             open(out_dir / "test_codes.pkl", "wb"),
         )
+
+
+def get_prev_code(code: str) -> str:
+    d, b, g, l = _process_code(code)
+
+    if _is_stem(code):
+        if g > 1:
+            return f"{d}.{b}.{g-1}.{l-1}"
+        else:
+            raise ValueError("Found code without previous step.")
+    else:
+        if l > 0:
+            return f"{d}.{b}.{g-1}.{l-1}"
+        else:
+            return f"{d}.0.{g-1}.{g-1}"
 
 
 def get_ft_window_by_code(data: File, code: str, ft_window_size: int) -> np.ndarray:
@@ -167,19 +164,42 @@ def get_ft_window_by_code(data: File, code: str, ft_window_size: int) -> np.ndar
                 return np.concatenate([part_3, part_2, part_1], axis=0)
 
 
-def get_obs_by_code(data: File, code: str, ft_window_size: int) -> dict:
+def get_obs_by_code(
+    data: File, code: str, ft_window_size: int, unsqueeze: bool = False
+) -> dict:
     obs = {}
     d, b, _, l = _process_code(code)
 
-    # add ft window
-    # BEST: for debugging
-    obs["code"] = code
     obs["ft"] = get_ft_window_by_code(data, code, ft_window_size)
     obs["action"] = data[f"data/{d}/{b}/action"][l]
     obs["proprio"] = data[f"data/{d}/{b}/proprio"][l]
     obs["image"] = data[f"data/{d}/{b}/image"][l]
 
-    return obs
+    return _process_obs(obs=obs, unsqueeze=unsqueeze)
+
+
+def get_demo_endpoint_code(codes: list, endpoint_type="init") -> str:
+    """Assume all codes are generated from the same demo
+
+    Args:
+        codes (list): sample codes
+        endpoint_type (str, optional): eiter "init" or "goal". Defaults to "init".
+
+    Raises:
+        ValueError: when other endpoint_type is provided
+
+    Returns:
+        str: endpoint code
+    """
+    if endpoint_type == "init":
+        d, _, _, _ = codes[0].split(".")
+        return f"{d}.0.0.0"
+    elif endpoint_type == "goal":
+        return max(
+            codes, key=lambda x: int(x.split(".")[2]) if x.split(".")[1] == "0" else 0
+        )
+    else:
+        raise ValueError("Invalid endpoint type provided.")
 
 
 def to_cuda(data_dict: dict):
@@ -197,6 +217,28 @@ def _process_code(code: str) -> Tuple[str, int, int, int]:
     d, b, g, l = code.split(".")
     b, g, l = int(b), int(g), int(l)
     return (d, b, g, l)
+
+
+def _process_obs(obs: dict, unsqueeze: bool = False) -> dict:
+    processed_obs = {}
+
+    # TODO: is this transpose necessary?
+    processed_obs["ft"] = obs["ft"].T  # [ft_window_size, 6] -> [6, ft_window_size]
+    processed_obs["action"] = obs["action"]
+    processed_obs["proprio"] = obs["proprio"]
+    processed_obs["image"] = obs["image"]
+    # processed_obs["image"] = obs["image"].transpose((2, 0, 1))  # [128, 128, 3] -> [3, 128, 128]
+
+    # convert to torch tensor
+    processed_obs = {k: torch.Tensor(v).double() for (k, v) in processed_obs.items()}
+
+    # unsqueeze for inference
+    if unsqueeze:
+        processed_obs = {
+            k: torch.unsqueeze(v, dim=0) for (k, v) in processed_obs.items()
+        }
+
+    return processed_obs
 
 
 # def process_raw_sample_obs(

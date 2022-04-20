@@ -6,45 +6,53 @@ from models.base_models.encoders import DepthmapEncoder, ImageEncoder, FusionNet
 from models.base_models.decoders import DepthmapDecoder, ImageDecoder
 
 
-class PartialObsAutoEncoder(nn.Module):
+class DRPOEncoder(nn.Module):
     def __init__(self, config: dict) -> None:
 
         super().__init__()
 
-        self.ft_network_type = config["ft_network_type"]
+        ft_network_type = config["ft_network_type"]
 
         # security check before running exec
-        if self.ft_network_type not in ["MLP", "LSTM"]:
+        if ft_network_type not in ["MLP", "LSTM"]:
             raise ValueError("Invalid network type, dangerous input")
-        exec(
-            f"from models.base_models.encoders import FtEncoder{self.ft_network_type} as FtEncoder"
-        )
-        exec(
-            f"from models.base_models.decoders import FtDecoder{self.ft_network_type} as FtDecoder"
-        )
+        else:
+            exec(
+                f"from models.base_models.encoders import FtEncoder{ft_network_type} as FtEncoder"
+            )
+            exec(
+                f"from models.base_models.decoders import FtDecoder{ft_network_type} as FtDecoder"
+            )
 
         self.config = config
         self.z_dim = config["z_dim"]
-        initialize_weights = config["initialize_weights"]
         self.sensors = config["sensor_used_in_model"]
         self.architecture = config["architecture"]
+        ft_window_size = config["ft_window_size"]
+        initialize_weights = config["initialize_weights"]
 
         # there must be FT sensor to provide delta_z info
         assert "ft" in self.sensors
         # there must be another sensor other than FT to provide z info
         assert len(self.sensors) > 1
+
         # there are multiple other sensors
         if len(self.sensors) > 2:
+            self.multimodal = True
             self.num_other_sensors = len(self.sensors) - 1
             self.fusion = FusionNet(
-                self.num_other_sensors * self.z_dim, self.z_dim, initialize_weights
+                concat_z_dim=(len(self.sensors) - 1) * self.z_dim,
+                output_z_dim=self.z_dim,
+                initialize_weights=initialize_weights,
             )
+        else:
+            self.multimodal = False
 
         # the sensor should always include ft, plus other sensor such as depthmap
         for sensor in self.sensors:
             if sensor == "ft":
                 params = {
-                    "ft_window_size": self.config["ft_window_size"],
+                    "ft_window_size": ft_window_size,
                 }
             else:
                 params = {}
@@ -55,7 +63,7 @@ class PartialObsAutoEncoder(nn.Module):
                 self,
                 f"{sensor}_encoder",
                 eval(f"{sensor.capitalize()}Encoder")(
-                    self.z_dim, initialize_weights, **params
+                    z_dim=self.z_dim, initialize_weights=initialize_weights, **params
                 ),
             )
 
@@ -64,7 +72,7 @@ class PartialObsAutoEncoder(nn.Module):
                 self,
                 f"{sensor}_decoder",
                 eval(f"{sensor.capitalize()}Decoder")(
-                    self.z_dim, initialize_weights, **params
+                    z_dim=self.z_dim, initialize_weights=initialize_weights, **params
                 ),
             )
 
@@ -74,32 +82,29 @@ class PartialObsAutoEncoder(nn.Module):
     def encode(self, obs: dict) -> dict:
         raw_encoded = {}
         for sensor in self.sensors:
-            x = obs[sensor]
-            out = getattr(self, f"{sensor}_encoder")(x)
-            raw_encoded[sensor] = out
+            raw_encoded[sensor] = getattr(self, f"{sensor}_encoder")(obs[sensor])
         return raw_encoded
 
-    def process_raw_encoded(self, raw_encoded: dict) -> tuple:
-        delta_z = raw_encoded["ft"]
+    def process_raw_encoded(self, raw_encoded: dict, obs: dict) -> tuple:
+        # delta_z
+        # NOTE: comment off to compare
+        # delta_z = raw_encoded["ft"]
+        delta_z = torch.cat([raw_encoded["ft"], obs["action"]], dim=1)
 
-        if len(self.sensors) > 2:
-            concat_z = []
-            for sensor in self.sensors:
-                if sensor != "ft":
-                    concat_z.append(raw_encoded[sensor])
-            z = self.fusion(torch.cat(concat_z, dim=1))
-        else:
-            for sensor in self.sensors:
-                if sensor != "ft":
-                    z = raw_encoded[sensor]
+        # z
+        # TODO: test!
+        z = [raw_encoded[s] for s in self.sensors if s != "ft"]
+        z = torch.cat(z, dim=1)
+        if self.multimodal:
+            z = self.fusion(z)
 
-        # different normalization for different architectures
+        # normalization
         if self.architecture == 1:
             z = z / torch.norm(z, dim=1, keepdim=True)
         elif self.architecture == 2 or self.architecture == 3:
             delta_z = delta_z / torch.norm(delta_z, dim=1, keepdim=True)
         else:
-            raise ValueError("Invalid architecture type")
+            raise ValueError("Invalid architecture type.")
 
         return z, delta_z
 
@@ -108,28 +113,28 @@ class PartialObsAutoEncoder(nn.Module):
 
     def forward(self, obs: dict) -> tuple:
         raw_encoded = self.encode(obs)
-        z, delta_z = self.process_raw_encoded(raw_encoded)
+        z, delta_z = self.process_raw_encoded(raw_encoded=raw_encoded, obs=obs)
         encoded = (z, delta_z)
         return encoded
 
     def compute_loss(
         self,
+        obs_prev: dict,
+        encoded_prev: tuple,
+        decoded_prev: dict,
         obs_curr: dict,
         encoded_curr: tuple,
         decoded_curr: dict,
-        obs_next: dict,
-        encoded_next: tuple,
-        decoded_next: dict,
     ) -> dict:
         # reconstruction loss
+        recon_loss_prev = self.compute_reconstruction_loss(obs_prev, decoded_prev)
         recon_loss_curr = self.compute_reconstruction_loss(obs_curr, decoded_curr)
-        recon_loss_next = self.compute_reconstruction_loss(obs_next, decoded_next)
-        recon_loss = recon_loss_curr + recon_loss_next
+        recon_loss = recon_loss_prev + recon_loss_curr
 
         if self.architecture == 1 or self.architecture == 3:
             # temporal enforcement loss
             temp_enforce_loss = self.compute_temporal_enforcement_loss(
-                encoded_curr, encoded_next
+                encoded_prev, encoded_curr
             )
 
             loss = (
@@ -145,27 +150,29 @@ class PartialObsAutoEncoder(nn.Module):
             loss = recon_loss
             return {
                 "loss": loss,
+                "recon_loss_prev": recon_loss_prev,
                 "recon_loss_curr": recon_loss_curr,
-                "recon_loss_next": recon_loss_next,
             }
         else:
             raise ValueError("Invalid architecture type")
 
     def compute_temporal_enforcement_loss(
-        self, encoded_curr: tuple, encoded_next: tuple
+        self, encoded_prev: tuple, encoded_curr: tuple
     ) -> torch.Tensor:
         # architecture 2 only
-        z_curr, _ = encoded_curr
-        z_next, delta_z_next = encoded_next
+        z_prev, _ = encoded_prev
+        z_curr, delta_z_curr = encoded_curr
 
-        # utilize z_next = z_curr + delta_z
-        loss = self.l2_loss(z_curr + delta_z_next, z_next)
+        # utilize z_curr = z_prev + delta_z_curr
+        loss = self.l2_loss(z_prev + delta_z_curr, z_curr)
         return loss
 
     def compute_reconstruction_loss(self, obs: dict, decoded: dict) -> torch.Tensor:
         loss = 0.0
         sensors = decoded.keys()
         for sensor in sensors:
-            loss += self.l2_loss(obs[sensor], decoded[sensor],)
+            loss += self.l2_loss(
+                obs[sensor],
+                decoded[sensor],
+            )
         return loss
-
