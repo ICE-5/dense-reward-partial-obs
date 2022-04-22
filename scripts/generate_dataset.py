@@ -3,7 +3,6 @@ import argparse
 import pathlib
 from pathlib import Path
 
-from drpo.samplers.sampler import Sampler
 from drpo.samplers.basic_sampler import BasicSampler
 from drpo.samplers.blank_sampler import BlankSampler
 from drpo.samplers.temporal_sampler import TemporalSampler
@@ -21,17 +20,11 @@ def parse_args():
         help="path of configuration file, check configs/ for template ",
     )
     parser.add_argument(
-        "-d",
-        "--demo-path",
-        type=str,
-        required=True,
-        help="path of demo hdf5 file",
-    )
-    parser.add_argument(
         "-o",
-        "--data-dir",
+        "--out-dir",
         type=str,
-        required=True,
+        required=False,
+        default=None,
         help="directory of output",
     )
     parser.add_argument(
@@ -48,19 +41,25 @@ def parse_args():
 def generate_dataset(
     config: dict,
     demo_path: Path,
-    data_dir: Path,
+    out_dir: Path,
     demo_names: list = None,
     split_only: bool = False,
 ):
-    
+    # available samplers
+    sampler_map = {
+        cls.__name__: cls for cls in (BlankSampler, BasicSampler, TemporalSampler)
+    }
+    sampler = sampler_map[config["sampler"]]
+
     if not split_only:
-        spl = exec(sampler = config["sampler"])(config, demo_path, data_dir)
-        # spl = sampler(config, demo_path, data_dir)
+        spl = sampler(config=config, demo_path=demo_path, out_dir=out_dir)
+        # spl = exec(config["sampler"])(config, demo_path, out_dir)
+        # spl = sampler(config, demo_path, out_dir)
         spl.sample(demo_names)
 
-    codes_path = data_dir / "codes.pkl"
+    codes_path = out_dir / "codes.pkl"
     split_test_train(codes_path=codes_path, split_ratio=config["split_ratio"])
-    prGreen(f"\nSUCCESS | train and test dataset generated at: {data_dir}\n")
+    prGreen(f"\nSUCCESS | train and test dataset generated at: {out_dir}\n")
 
 
 if __name__ == "__main__":
@@ -68,12 +67,13 @@ if __name__ == "__main__":
     with open(args.config) as f:
         config = yaml.safe_load(f)
 
+    # if not specified, save output to data_dir
+    out_dir = args.out_dir if args.out_dir else config["data_dir"]
+
     generate_dataset(
         config=config,
-        demo_path=Path(args.demo_path),
-        data_dir=Path(args.data_dir),
-        demo_names=[
-            "demo_2",
-        ],
+        demo_path=config["demo_path"],
+        out_dir=Path(out_dir),
+        demo_names=config["demo_names"],
         split_only=False,
     )

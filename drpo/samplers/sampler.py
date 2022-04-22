@@ -1,15 +1,15 @@
 import h5py
+import numpy as np
 import pathlib
 import pickle
-import numpy as np
-
 
 from abc import ABC, abstractmethod
+from h5py._hl.group import Group
+from pathlib import Path
 
 from robosuite.utils.mjcf_utils import postprocess_model_xml
 
 from drpo.envs.envs_launcher import env_creator
-# from drpo.dataloader.utils import Sample
 
 
 class Sampler(ABC):
@@ -66,11 +66,21 @@ class Sampler(ABC):
             self.env.reset_from_xml_string(xml)
             self.env.sim.reset()
 
-            # record demo
-            self.record_demo(demo_name)
+            # get demo states and actions
+            states = self.demo_file[f"data/{demo_name}/states"][()]
+            actions = self.demo_file[f"data/{demo_name}/actions"][()]
 
-            # sample_demo
-            self._sample_demo(demo_name)
+            # record original demo
+            self.record_branch(
+                demo_name=demo_name,
+                branch_index=0,
+                initial_state=states[0],
+                initial_global_timestep=-1,
+                actions=actions,
+            )
+
+            # sample demo
+            self.sample_demo(demo_name=demo_name, states=states)
 
         # save and close file
         self.data_file.close()
@@ -80,36 +90,31 @@ class Sampler(ABC):
             open(self.out_dir / "codes.pkl", "wb"),
         )
 
-    def _sample_demo(self, demo_name: str):
-        """Specify demo-wise sampling
-        - forward / backward sampling
-        - sampling interval (# of steps to skip between sampling)
-        """
-        # record demo
-        states = self.demo_file[f"data/{demo_name}/states"][()]
+    def sample_demo(self, demo_name: str, states: np.ndarray) -> None:
         n = len(states)
 
         # get steps to sample
         # NOTE: manually skipped a few steps (5 steps)
+        padding = 5
         if self.sampling_forward:
-            sampling_timesteps = np.arange(5, n, self.sampling_interval)
+            sampling_timesteps = np.arange(padding, n - padding, self.sampling_interval)
         else:
-            sampling_timesteps = np.arange(n, 5, -self.sampling_interval)
+            sampling_timesteps = np.arange(
+                n - padding, padding, -self.sampling_interval
+            )
 
-        # sample step
+        # sample at (global) timestep
         for level, timestep in enumerate(sampling_timesteps):
-            state = states[timestep]
-            self.__load_state(state)
-            identifier = {
+            kwargs = {
                 "demo_name": demo_name,
                 "level": level,
-                "global_timestep": timestep,
+                "initial_global_timestep": timestep,
+                "initial_state": states[timestep + 1],
             }
-            self._sample_step(**identifier)
-        
+            self.sample_step(**kwargs)
 
     @abstractmethod
-    def _sample_step(self, **kwargs):
+    def sample_step(self, **kwargs):
         """Specify step-wise sampling
         - # of branches to generate
         - # of steps to generate per branch
@@ -117,38 +122,36 @@ class Sampler(ABC):
         """
         raise NotImplementedError()
 
-    def __load_state(self, state):
+    def load_state(self, state):
         self.env.sim.set_state_from_flattened(state)
         self.env.sim.forward()
 
-    # TODO: currently use last state of episode as done
-    def record_demo(self, demo_name):
-        """Store a demo episode's FT, image, proprio, action as branch in data.hdf5
+    def record_branch(
+        self,
+        demo_name: str,
+        branch_index: (int or str),
+        initial_state: np.ndarray,
+        initial_global_timestep: int,
+        actions: np.ndarray,
+    ) -> None:
+        """Record obs given an initial state and a sequence of actions
 
         Args:
-            demo_name (str): name of demo to record
-            branch_name (str, optional): _description_. Defaults to "branch_0".
+            demo_name (str): demo name
+            branch_index (int or str): branch index, 0 if stem
+            initial_state (np.ndarray): initial state to start recording
+            initial_global_timestep (int): initial state's global timestep
+            actions (np.ndarray): sequence of actions
         """
-        # by default, the real demo is the stem branch, with branch_index=0
-        branch_index = 0
-
-        # get demo actions and states
-        states = self.demo_file[f"data/{demo_name}/states"][()]
-        actions = self.demo_file[f"data/{demo_name}/actions"][()]
-        n = len(states)
-        # print(n)
-
-        # get demo droup in data
+        # create branch group in demo group
         demo_grp = self.grp[demo_name]
-
-        # create branch
         branch_grp = demo_grp.create_group(str(branch_index))
 
-        # set initial state
-        self.env.sim.set_state_from_flattened(states[0])
-        self.env.sim.forward()
+        # reset env
+        self.load_state(initial_state)
 
-        # BEST: peel hardcode dims
+        # create container by num of actions
+        n = len(actions)
         ft_arr = np.zeros([n, 6])
         image_arr = np.zeros([n, 128, 128, 3])
         proprio_arr = np.zeros([n, 32])
@@ -161,8 +164,6 @@ class Sampler(ABC):
             force = robot.ee_force
             torque = robot.ee_torque
 
-            ft = np.concatenate([force, torque])
-
             # save to dataset
             ft_arr[j, :3] = force
             ft_arr[j, 3:] = torque
@@ -171,9 +172,11 @@ class Sampler(ABC):
             action_arr[j, :] = action
             reward_arr[j] = reward
 
-            # add code, skip first one for pair consideration
-            if j > 0:
-                code = f"{demo_name}.{branch_index}.{j}.{j}"
+            # add code, skip first one for pair obs completeness
+            global_timestep = initial_global_timestep + 1 + j
+            local_timestep = j
+            code = f"{demo_name}.{branch_index}.{global_timestep}.{local_timestep}"
+            if global_timestep > 0:
                 self.codes.append(code)
 
         # save container in hdf5
@@ -182,5 +185,3 @@ class Sampler(ABC):
         branch_grp.create_dataset("proprio", data=np.array(proprio_arr))
         branch_grp.create_dataset("action", data=np.array(action_arr))
         branch_grp.create_dataset("reward", data=np.array(reward_arr))
-
-        # return states

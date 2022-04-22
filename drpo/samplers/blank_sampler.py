@@ -10,7 +10,7 @@ class BlankSampler(Sampler):
     ) -> None:
         super().__init__(config, demo_path, out_dir)
 
-    def _sample_step(self, **kwargs):
+    def sample_step(self, **kwargs):
         pass
 
 

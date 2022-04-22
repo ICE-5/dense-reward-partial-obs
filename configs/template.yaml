@@ -9,8 +9,8 @@ use_gpu: True
 sampler: "BasicSampler"
 sampling_forward: True
 sampling_interval: 500
-num_branches: 2                                       # number of samples to generate at each depth
-num_steps_per_branch: 5
+num_branches: 5                                       # number of samples to generate at each depth
+num_steps_per_branch: 15
 
 control_angle_goal: 15
 control_angle_start: 45
@@ -23,6 +23,7 @@ split_ratio: 0.5
 
 # observation dims
 ft_window_size: 32                                     # number of frame to concatenate into one observation
+ft_dim: 6
 action_dim: 7
 proprio_dim: 32
 image_dim: 128

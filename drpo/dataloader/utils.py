@@ -48,7 +48,7 @@ def split_test_train_2(codes_path: pathlib.Path, split_ratio:float=0.5):
 
 
 def get_prev_code(code: str) -> str:
-    d, b, g, l = _process_code(code)
+    d, b, g, l = process_code(code)
 
     if _is_stem(code):
         if g >= 1:
@@ -64,7 +64,7 @@ def get_prev_code(code: str) -> str:
 
 
 def get_ft_window_by_code(data: File, code: str, ft_window_size: int) -> np.ndarray:
-    d, b, g, l = _process_code(code)
+    d, b, g, l = process_code(code)
 
     branch_ft_arr = data[f"data/{d}/{b}/ft"]
 
@@ -100,7 +100,7 @@ def get_obs_by_code(
     unsqueeze: bool = False,
 ) -> dict:
     obs = {}
-    d, b, _, l = _process_code(code)
+    d, b, _, l = process_code(code)
 
     obs["ft"] = get_ft_window_by_code(data, code, ft_window_size)
     obs["action"] = data[f"data/{d}/{b}/action"][l]
@@ -159,11 +159,11 @@ def to_cuda(data_dict: dict):
 
 
 def _is_stem(code: str) -> bool:
-    _, b, _, _ = _process_code(code)
+    _, b, _, _ = process_code(code)
     return int(b) == 0
 
 
-def _process_code(code: str) -> Tuple[str, int, int, int]:
+def process_code(code: str) -> Tuple[str, int, int, int]:
     d, b, g, l = code.split(".")
     b, g, l = int(b), int(g), int(l)
     return (d, b, g, l)
@@ -172,7 +172,7 @@ def _process_code(code: str) -> Tuple[str, int, int, int]:
 def _process_obs(obs: dict, unsqueeze: bool = False) -> dict:
     processed_obs = {}
 
-    processed_obs["ft"] = obs["ft"]  # [ft_window_size, 6] -> [6, ft_window_size]
+    processed_obs["ft"] = obs["ft"]
     processed_obs["action"] = obs["action"]
     processed_obs["proprio"] = obs["proprio"]
     # processed_obs["image"] = obs["image"]
