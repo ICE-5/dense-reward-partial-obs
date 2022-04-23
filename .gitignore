@@ -15,6 +15,7 @@ data/*.hdf5
 data/*.pkl
 
 media/
+debug/
 
 # unsync test scripts
 tests/
