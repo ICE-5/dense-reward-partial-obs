@@ -22,7 +22,7 @@ data_dir: "data"
 split_ratio: 0.5
 
 # observation dims
-ft_window_size: 32                                     # number of frame to concatenate into one observation
+ft_window_size: 1                                     # number of frame to concatenate into one observation
 ft_dim: 6
 action_dim: 7
 proprio_dim: 32
