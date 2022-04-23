@@ -4,8 +4,6 @@ import pathlib
 import pickle
 
 from abc import ABC, abstractmethod
-from h5py._hl.group import Group
-from pathlib import Path
 
 from robosuite.utils.mjcf_utils import postprocess_model_xml
 

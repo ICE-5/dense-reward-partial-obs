@@ -17,11 +17,19 @@ class FtDecoderMLP(nn.Module):
         super().__init__()
         self.z_dim = z_dim
 
-        # adapt to different window size, by default use 8
-        if "ft_window_size" in kwargs.keys():
+        try:
             self.ft_window_size = kwargs["ft_window_size"]
+            self.use_action_in_delta = kwargs["use_action_in_delta"]
+            self.action_dim = kwargs["action_dim"]
+        except:
+            raise IOError("Missing essential arguments.")
+
+        # adapt to different window size, by default use 8
+        if self.use_action_in_delta:
+            self.out_dim = 6 * self.ft_window_size + self.action_dim
         else:
-            self.ft_window_size = 8
+            self.out_dim = 6 * self.ft_window_size
+
 
         self.decoder = nn.Sequential(
             nn.Linear(self.z_dim, 128),
@@ -30,7 +38,7 @@ class FtDecoderMLP(nn.Module):
             nn.LeakyReLU(0.1, inplace=True),
             nn.Linear(128, 64),
             nn.LeakyReLU(0.1, inplace=True),
-            nn.Linear(64, 6 * self.ft_window_size),
+            nn.Linear(64, self.out_dim),
             nn.LeakyReLU(0.1, inplace=True),
         )
 

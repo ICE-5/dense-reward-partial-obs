@@ -16,24 +16,24 @@ class FtEncoderMLP(nn.Module):
 
         try:
             self.ft_window_size = kwargs["ft_window_size"]
-            use_action_in_delta = kwargs["use_action_in_delta"]
-            action_dim = kwargs["action_dim"]
+            self.use_action_in_delta = kwargs["use_action_in_delta"]
+            self.action_dim = kwargs["action_dim"]
         except:
             raise IOError("Missing essential arguments.")
 
-        if use_action_in_delta:
-            out_dim = z_dim - action_dim
+        if self.use_action_in_delta:
+            self.in_dim = 6 * self.ft_window_size + self.action_dim
         else:
-            out_dim = z_dim
+            self.in_dim = 6 * self.ft_window_size
 
         self.encoder = nn.Sequential(
-            nn.Linear(6 * self.ft_window_size, 64),
+            nn.Linear(self.in_dim, 64),
             nn.LeakyReLU(0.1, inplace=True),
             nn.Linear(64, 128),
             nn.LeakyReLU(0.1, inplace=True),
             nn.Linear(128, 128),
             nn.LeakyReLU(0.1, inplace=True),
-            nn.Linear(128, out_dim),
+            nn.Linear(128, z_dim),
             nn.LeakyReLU(0.1, inplace=True),
         )
 
@@ -41,11 +41,12 @@ class FtEncoderMLP(nn.Module):
             init_weights(self.modules())
 
     def forward(self, x):
-        x = x.reshape([-1, 6 * self.ft_window_size])
+        if self.use_action_in_delta:
+            x = x.reshape([-1, self.in_dim]) 
         return self.encoder(x)
 
 
-# TODO: craft and tune LSTM encoder
+# TODO: STALE, don't use
 class FtEncoderLSTM(nn.Module):
     def __init__(self, z_dim, initialize_weights=True, **kwargs):
         """

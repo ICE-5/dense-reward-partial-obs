@@ -31,12 +31,12 @@ if __name__ == "__main__":
         type=str,
         help="Path to your demonstration folder that contains the demo.hdf5 file, e.g.: "
         "'path_to_assets_dir/demonstrations/YOUR_DEMONSTRATION'",
-        default="../demo"
+        default="demos"
     ),
     parser.add_argument(
         "--use-actions",
         action="store_true",
-        default=False,
+        default=True,
     )
     args = parser.parse_args()
 
@@ -59,12 +59,8 @@ if __name__ == "__main__":
     # list of all demonstrations episodes
     demos = list(f["data"].keys())
 
-    print("Playing back random episode... (press ESC to quit)")
-
-    # NOTE: select an episode to vis
-    print(demos)
-    ep = "demo_2"
-    # ep = random.choice(demos)
+    ep = random.choice(demos)
+    print(f"Playing back random episode {ep} (press ESC to quit)")
 
     # read the model xml, using the metadata stored in the attribute for this episode
     model_xml = f["data/{}".format(ep)].attrs["model_file"]
@@ -77,9 +73,10 @@ if __name__ == "__main__":
 
     # load the flattened mujoco states
     states = f["data/{}/states".format(ep)][()]
+    actions = np.array(f["data/{}/actions".format(ep)][()])
 
-    N = len(states)
-    ft = np.zeros([N, 6])
+    n = len(states)
+    ft = np.zeros([n, 6])
 
     if args.use_actions:
         # load the initial state
@@ -87,56 +84,71 @@ if __name__ == "__main__":
         env.sim.forward()
 
         # load the actions and play them back open-loop
-        actions = np.array(f["data/{}/actions".format(ep)][()])
         num_actions = actions.shape[0]
         action_dim = actions.shape[1]
-        print(">>> acrion_dim", action_dim) # 7
 
         for j, action in enumerate(actions):
             obs, reward, done, info = env.step(action)
             env.render()
+
+            # robot = env.robots[0]
+            # force = robot.ee_force
+            # torque = robot.ee_torque
+            # ft[j, :3] = force
+            # ft[j, 3:] = torque
 
             if j < num_actions - 1:
                 # ensure that the actions deterministically lead to the same recorded states
                 state_playback = env.sim.get_state().flatten()
                 if not np.all(np.equal(states[j + 1], state_playback)):
                     err = np.linalg.norm(states[j + 1] - state_playback)
-                    print(f"[warning] playback diverged by {err:.2f} for ep {ep} at step {j}")
+                    print(f"[warning] playback diverged by {err} for ep {ep} at step {j}")
 
     else:
 
         # force the sequence of internal mujoco states one by one
-        n = len(states)
-
         for i, state in enumerate(states):
             env.sim.set_state_from_flattened(state)
             env.sim.forward()
-            env.render()
+            # env.render()
 
             # get force/torque
             robot = env.robots[0]
             force = robot.ee_force
             torque = robot.ee_torque
-            ft[i, 0:3] = force
-            ft[i, 3:6] = torque
+            ft[i, :3] = force
+            ft[i, 3:] = torque
 
         # NOTE: compare abrupt playback to successive playback result
-        num_trials = 10
-        tmp_ft = np.zeros(6)
-        for _ in range(num_trials):
-            j = np.random.randint(n)
-            state = states[j]
-            env.sim.set_state_from_flattened(state)
-            env.sim.forward()
-            env.render()
+    num_trials = 10
+    tmp_ft_0 = np.zeros(6)
+    tmp_ft_1 = np.zeros(6)
+    for _ in range(num_trials):
+        j = np.random.randint(n)
+        state = states[j]
+        env.sim.set_state_from_flattened(state)
+        env.sim.forward()
+        env.render()
 
-            robot = env.robots[0]
-            force = robot.ee_force
-            torque = robot.ee_torque
-            tmp_ft[0:3] = force
-            tmp_ft[3:6] = torque
+        robot = env.robots[0]
+        force = robot.ee_force
+        torque = robot.ee_torque
+        tmp_ft_0[:3] = force
+        tmp_ft_0[3:] = torque
 
-            print(j, tmp_ft, ft[j, :].flatten(), np.linalg.norm(tmp_ft - ft[j, :].flatten()))
+        # print(j, tmp_ft, ft[j, :].flatten(), np.linalg.norm(tmp_ft - ft[j, :].flatten()))
+        print(j)
+        print("before action:", np.linalg.norm(tmp_ft_0 - ft[j, :].flatten()))
+
+        env.step(actions[j])
+        robot = env.robots[0]
+        force = robot.ee_force
+        torque = robot.ee_torque
+        tmp_ft_1[:3] = force
+        tmp_ft_1[3:] = torque
+        print("after action:", np.linalg.norm(tmp_ft_1 - ft[j+1, :].flatten()))
+        print("\n")
+
 
 
     

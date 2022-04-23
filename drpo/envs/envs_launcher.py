@@ -37,7 +37,7 @@ if __name__ == '__main__':
         type=str,
         default="../demos/demo.hdf5",
         help="Path to your demonstration folder that contains the demo.hdf5 file, e.g.: "
-        "'path_to_assets_dir/demonstrations/YOUR_DEMONSTRATION'",
+        "demos/",
     ),
     parser.add_argument(
         "--use-actions",

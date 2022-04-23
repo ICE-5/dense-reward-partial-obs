@@ -27,6 +27,7 @@ class DRPONetwork(nn.Module):
         self.z_dim = config["z_dim"]
         self.sensors = config["sensors"]
         self.architecture = config["architecture"]
+        self.use_action_in_delta = config["use_action_in_delta"]
         initialize_weights = config["initialize_weights"]
 
         # there must be FT sensor to provide delta_z info
@@ -85,12 +86,10 @@ class DRPONetwork(nn.Module):
             raw_encoded[sensor] = getattr(self, f"{sensor}_encoder")(obs[sensor])
         return raw_encoded
 
-    def process_raw_encoded(self, raw_encoded: dict, obs: dict) -> tuple:
+    def process_raw_encoded(self, raw_encoded: dict) -> tuple:
         # delta_z
         # NOTE: comment off to compare
-        # delta_z = raw_encoded["ft"]
-        delta_z = torch.cat([raw_encoded["ft"], obs["action"]], dim=1)
-
+        delta_z = raw_encoded["ft"]
         # z
         # TODO: test!
         z = [raw_encoded[s] for s in self.sensors if s != "ft"]
@@ -113,7 +112,7 @@ class DRPONetwork(nn.Module):
 
     def forward(self, obs: dict) -> tuple:
         raw_encoded = self.encode(obs)
-        z, delta_z = self.process_raw_encoded(raw_encoded=raw_encoded, obs=obs)
+        z, delta_z = self.process_raw_encoded(raw_encoded=raw_encoded)
         encoded = (z, delta_z)
         return encoded
 

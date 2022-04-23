@@ -17,7 +17,7 @@ def split_test_train(codes_path: pathlib.Path, split_ratio: float):
     Args:
         codes_path (pathlib.Path): upstream sampled codes
         split_ratio (float): train-test split ratio
-    """    
+    """
     out_dir = codes_path.parents[0]
     with open(codes_path, "rb") as p:
         codes = pickle.load(p)
@@ -36,14 +36,15 @@ def split_test_train(codes_path: pathlib.Path, split_ratio: float):
             open(out_dir / "test_codes.pkl", "wb"),
         )
 
+
 # TODO: TBA. for generalization purposes
-def split_test_train_2(codes_path: pathlib.Path, split_ratio:float=0.5):
+def split_test_train_2(codes_path: pathlib.Path, split_ratio: float = 0.5):
     """Demo-wise split. E.g., one demo will be used for training, another one will be used for testing.
 
     Args:
         codes_path (pathlib.Path): upstream sampled codes
         split_ratio (float, optional): train-test split ratio. Defaults to 0.5.
-    """    
+    """
     pass
 
 
@@ -70,7 +71,7 @@ def get_ft_window_by_code(data: File, code: str, ft_window_size: int) -> np.ndar
 
     # if possible to slice within branch
     if l + 1 > ft_window_size:
-        return branch_ft_arr[l + 1 - ft_window_size : l + 1, :]
+        return branch_ft_arr[l - ft_window_size + 1 : l + 1, :]
     else:
         # get part_1 from current branch
         part_1 = branch_ft_arr[: l + 1, :]
@@ -78,6 +79,7 @@ def get_ft_window_by_code(data: File, code: str, ft_window_size: int) -> np.ndar
         if _is_stem(code):
             # get part_2 by padding
             part_2 = np.zeros([ft_window_size - l - 1, 6])
+            print(part_1.shape, part_2.shape)
             return np.concatenate([part_2, part_1], axis=0)
         else:
             # get part_2 from stem
@@ -97,12 +99,18 @@ def get_obs_by_code(
     data: File,
     code: str,
     ft_window_size: int,
+    use_action_in_delta: bool = True,
     unsqueeze: bool = False,
 ) -> dict:
     obs = {}
     d, b, _, l = process_code(code)
 
-    obs["ft"] = get_ft_window_by_code(data, code, ft_window_size)
+    if ft_window_size > 1:
+        obs["ft"] = get_ft_window_by_code(data, code, ft_window_size)
+        assert np.all(np.equal(obs["ft"][-1, :], data[f"data/{d}/{b}/ft"][l]))
+    else:
+        obs["ft"] = data[f"data/{d}/{b}/ft"][l]
+
     obs["action"] = data[f"data/{d}/{b}/action"][l]
     obs["proprio"] = data[f"data/{d}/{b}/proprio"][l]
     obs["image"] = data[f"data/{d}/{b}/image"][l]
@@ -111,7 +119,9 @@ def get_obs_by_code(
     obs["code"] = code
     obs["reward"] = data[f"data/{d}/{b}/reward"][l]
 
-    return _process_obs(obs=obs, unsqueeze=unsqueeze)
+    return _process_obs(
+        obs=obs, use_action_in_delta=use_action_in_delta, unsqueeze=unsqueeze
+    )
 
 
 def get_demo_endpoint_code(
@@ -169,16 +179,21 @@ def process_code(code: str) -> Tuple[str, int, int, int]:
     return (d, b, g, l)
 
 
-def _process_obs(obs: dict, unsqueeze: bool = False) -> dict:
+def _process_obs(obs: dict, use_action_in_delta: True, unsqueeze: bool = False) -> dict:
     processed_obs = {}
-
-    processed_obs["ft"] = obs["ft"]
+    # ft
+    if use_action_in_delta:
+        processed_obs["ft"] = np.concatenate([obs["ft"].flatten(), obs["action"]])
+    else:
+        processed_obs["ft"] = obs["ft"]
+    # action, [7, ]
     processed_obs["action"] = obs["action"]
+    # proprio, [32,]
     processed_obs["proprio"] = obs["proprio"]
-    # processed_obs["image"] = obs["image"]
-    processed_obs["image"] = obs["image"].transpose((2, 0, 1))  # [128, 128, 3] -> [3, 128, 128]
+    # image, [128, 128, 3] -> [3, 128, 128]
+    processed_obs["image"] = obs["image"].transpose((2, 0, 1))
 
-    # convert to torch tensor
+    # convert to torch double tensor
     processed_obs = {k: torch.Tensor(v).double() for (k, v) in processed_obs.items()}
 
     # unsqueeze for inference
@@ -188,38 +203,3 @@ def _process_obs(obs: dict, unsqueeze: bool = False) -> dict:
         }
 
     return processed_obs
-
-
-# def process_raw_sample_obs(
-#     config: dict, raw_obs: dict, unsqueeze: bool = False
-# ) -> dict:
-#     """Process raw observations from backward sampling for torch pipeline
-
-#     Args:
-#         config (dict): configuration
-#         raw_obs (dict): observation from backward sampling
-
-#     Returns:
-#         dict: processed observation ready for torch pipeline
-#     """
-#     processed_obs = {}
-#     for sensor in config["sensor_used_in_model"]:
-#         t = raw_obs[sensor]
-
-#         if "ft" in sensor:
-#             t = t.T
-#             if not config["left_append"]:
-#                 t = np.flip(t, axis=1).copy()
-#         elif "map" in sensor:
-#             t = np.expand_dims(t, axis=2)
-#             t = t.transpose((2, 0, 1))
-#         elif "img" in sensor:
-#             t = t.transpose((2, 0, 1))
-#         else:
-#             pass
-#         processed_obs[sensor] = torch.Tensor(t).double()
-
-#     if unsqueeze:
-#         return {k: torch.unsqueeze(v, dim=0) for (k, v) in processed_obs.items()}
-#     else:
-#         return processed_obs
