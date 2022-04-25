@@ -130,7 +130,7 @@ class ImageDecoder(nn.Module):
         return out
 
 
-class DepthmapDecoder(nn.Module):
+class DepthDecoder(nn.Module):
     """Depthmap decoder"""
 
     def __init__(self, z_dim, initialize_weights, **kwargs):

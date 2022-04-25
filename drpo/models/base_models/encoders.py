@@ -101,7 +101,7 @@ class ImageEncoder(nn.Module):
         return out
 
 
-class DepthmapEncoder(nn.Module):
+class DepthEncoder(nn.Module):
     def __init__(self, z_dim, initialize_weights=True, **kwargs):
         """
     Simplified Depthmap Encoder taken from Making Sense of Vision and Touch
