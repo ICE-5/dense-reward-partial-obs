@@ -11,6 +11,7 @@ import numpy as np
 
 from drpo.drpo import DRPO
 from drpo.dataloader.utils import *
+from drpo.utils import *
 
 # from process_rollouts import process_rollouts
 # from utils import *
@@ -41,13 +42,13 @@ def parse_args():
         required=True,
         help="path of model parameter .pt file",
     )
-    parser.add_argument(
-        "--use-delta",
-        type=bool,
-        default=False,
-        required=False,
-        help="whether to use delta hidden state to infer reward",
-    )
+    # parser.add_argument(
+    #     "--use-delta",
+    #     type=bool,
+    #     default=False,
+    #     required=False,
+    #     help="whether to use delta hidden state to infer reward",
+    # )
 
     args = parser.parse_args()
     return args
@@ -63,7 +64,11 @@ def eval_reward(model: DRPO, data_path: Path, codes_path: Path, demo_name: str) 
     original_reward_arr = data[f"data/{demo_name}/0/reward"][()]
     for code in demo_codes:
         obs = get_obs_by_code(
-            data=data, code=code, ft_window_size=model.ft_window_size, unsqueeze=True
+            data=data,
+            code=code,
+            ft_window_size=model.ft_window_size,
+            use_action_in_delta=True,
+            unsqueeze=True,
         )
         dense_reward = model.predict_reward(obs)
         dense_reward_arr.append(dense_reward)
@@ -124,33 +129,46 @@ if __name__ == "__main__":
     #     sort_by_length=False,
     # )
 
+    demo_name = "demo_1"
+    data_dir = Path(config["data_dir"])
+
     # load model
     model = DRPO(config=config, model_id=None, model_params_path=args.model_params_path)
-    model.set_init_goal_reference(demo_name="demo_2")
+    model.set_init_goal_reference(demo_name=demo_name)
 
-    data = h5py.File(data_dir / "data.hdf5", "r")
-    reward_arr = eval_reward()
+    print(model.model_id)
 
-    save_dir = pathlib.Path("media") / drpo.model_id / "vis_reward"
+    dense_reward_arr, original_reward_arr = eval_reward(
+        model=model,
+        data_path=data_dir / "data.hdf5",
+        codes_path=data_dir / "codes.pkl",
+        demo_name=demo_name,
+    )
+
+    save_dir = pathlib.Path("media") / model.model_id / "vis_reward_new"
     save_dir.mkdir(parents=True, exist_ok=True)
 
-    for i, rollout in enumerate(rollouts):
-        dense_rewards, dist_rewards = eval_rollout(drpo, rollout, args.use_delta)
-        x = np.arange(len(rollout))
-        ys = {}
-        ys["dense reward"] = dense_rewards
-        if i not in succ_rollout_indices:
-            name = "fail"
-            # ys["distance reward"] = dist_rewards
-        else:
-            name = "succ"
+    # for i, rollout in enumerate(rollouts):
+    #     dense_rewards, dist_rewards = eval_rollout(drpo, rollout, args.use_delta)
+    #     x = np.arange(len(rollout))
+    #     ys = {}
+    #     ys["dense reward"] = dense_rewards
+    #     if i not in succ_rollout_indices:
+    #         name = "fail"
+    #         # ys["distance reward"] = dist_rewards
+    #     else:
+    #         name = "succ"
+    x = np.arange(len(dense_reward_arr))
+    ys = {}
+    ys["dense reward"] = dense_reward_arr
+    ys["original reward"] = original_reward_arr
 
-        plot_curves(
-            x=x,
-            ys=ys,
-            save_dir=save_dir,
-            title=f"rollout #{i} {name}",
-            save_name=f"rollout_{i}_{name}",
-        )
+    plot_curves(
+        x=x,
+        ys=ys,
+        save_dir=save_dir,
+        title=f"{demo_name}",
+        save_name=f"{demo_name}",
+    )
 
     prGreen(f"\nSUCCESS | directory with plots: {save_dir}\n")

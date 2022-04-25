@@ -160,6 +160,10 @@ def get_demo_codes_by_name(codes: list, demo_name: str) -> list:
         for code in codes
         if (code.split(".")[1] == "0" and code.split(".")[0] == demo_name)
     ]
+
+    init_code = f"{demo_name}.0.0.0"
+    if init_code not in demo_codes:
+        demo_codes.append(init_code)
     return sorted(demo_codes, key=lambda x: int(x.split(".")[2]))
 
 

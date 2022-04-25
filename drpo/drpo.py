@@ -13,7 +13,8 @@ from torch.utils.tensorboard import SummaryWriter
 from drpo.models.model import DRPONetwork
 from drpo.dataloader.dataset import DRPODataset
 from drpo.dataloader.utils import to_cuda, get_demo_endpoint_code, get_obs_by_code
-# from drpo.utils import 
+
+# from drpo.utils import
 
 
 class DRPO:
@@ -79,9 +80,7 @@ class DRPO:
                 if "-" in tmp_model_id:
                     self.model_id = tmp_model_id
             except Exception:
-                print(
-                    ">>>>> Provide model_id to identify logging and plotting"
-                )
+                print(">>>>> Provide model_id to identify logging and plotting")
                 self.model_id = "test"
 
         # load model params if provided
@@ -342,7 +341,7 @@ class DRPO:
             self.z_init = torch.squeeze(self.z_init)
             self.z_goal = torch.squeeze(self.z_goal)
 
-    def predict_reward(self, obs: dict, use_delta: bool = False) -> float:
+    def predict_reward(self, obs: dict) -> float:
         # obs = process_raw_sample_obs(self.config, raw_obs, unsqueeze=True)
         if self.device.type == "cuda":
             obs = to_cuda(obs)
@@ -356,12 +355,12 @@ class DRPO:
             z = torch.squeeze(z)
             delta_z = torch.squeeze(delta_z)
 
-        if not use_delta:
-            dist_pred_g = self.calc_dist(self.z_goal, z)
+        # if not use_delta:
+        dist_pred_g = self.calc_dist(self.z_goal, z)
 
-        else:
-            reconstructed_z = self.z_init + self.prev_delta_z_sum + delta_z
-            dist_pred_g = self.calc_dist(self.z_goal, reconstructed_z)
+        # else:
+        #     reconstructed_z = self.z_init + self.prev_delta_z_sum + delta_z
+        #     dist_pred_g = self.calc_dist(self.z_goal, reconstructed_z)
 
         dist_i_g = self.calc_dist(self.z_goal, self.z_init)
         reward = 1.0 - dist_pred_g / dist_i_g

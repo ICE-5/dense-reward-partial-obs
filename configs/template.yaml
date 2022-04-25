@@ -48,6 +48,5 @@ log_freq: 10           # 200
 save_freq: 50          # 200
 
 # loss
-reconstruction_lambda: 0.2
-temporal_enforcement_lambda: 10.0
-
+reconstruction_lambda: 1
+temporal_enforcement_lambda: 1
