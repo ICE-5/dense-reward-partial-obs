@@ -1,11 +1,8 @@
-import h5py
-
 import pathlib
-
 import numpy as np
-from numpy.linalg import norm, solve
-from robosuite.environments.base import MujocoEnv
+
 from drpo.samplers.sampler import Sampler
+from numpy.linalg import norm, solve
 
 
 class TemporalSampler(Sampler):
@@ -19,7 +16,8 @@ class TemporalSampler(Sampler):
 
         # get env action spec
         self.action_low, self.action_high = self.env.action_spec
-    
+        self.action_dim = self.env.action_dim
+
         # init alpha solver
         self.alpha_solver = QuadraticAlphaSolver(
             ref_points=[
@@ -29,31 +27,60 @@ class TemporalSampler(Sampler):
             ],
         )
 
+    def sample_step(self, **kwargs):
 
-    def _sample_step(self, **kwargs):
+        try:
+            demo_name = kwargs["demo_name"]
+            level = kwargs["level"]
+            initial_state = kwargs["initial_state"]
+            initial_global_timestep = kwargs["initial_global_timestep"]
+            original_actions = kwargs["original_actions"]
+        except KeyError:
+            print("Missing necessary parameters for sampling.")
 
-        demo_grp = self.grp[kwargs["demo_name"]]
-        level = kwargs["level"]
-        
+        n = len(original_actions)
 
         for b in range(self.num_branches):
-            branch_name = f"branch_{level:03d}_{b:02d}"
-            demo_grp.create_group(branch_name)
 
-            
-            action = np.random.uniform(self.action_low, self.action_high)
+            sampled_actions = np.zeros([self.num_steps_per_branch, self.action_dim])
 
-            self.env.step()
-            
+            for j in range(self.num_steps_per_branch):
+                t = initial_global_timestep + j + 1
+                progress = t / n
+                alpha = self.alpha_solver.get_alpha(progress)
+                sampled_action = self._sample_action_with_control(
+                    original_action=original_actions[t], alpha=alpha
+                )
+                sampled_actions[j, :] = sampled_action
 
-        pass
-        
+            branch_index = level * self.num_branches + b + 1
 
+            self.record_branch(
+                demo_name=demo_name,
+                branch_index=branch_index,
+                initial_state=initial_state,
+                initial_global_timestep=initial_global_timestep,
+                actions=sampled_actions,
+            )
 
+    def _sample_action_with_control(
+        self, original_action: np.ndarray, alpha: float = 0.0
+    ) -> np.ndarray:
+        """Sample action controlled variance
 
+        Args:
+            original_action (np.ndarray): the action to compare with
+            alpha (float, optional): control parameter for cosine similarity. Defaults to 0..
+        """
+        while True:
+            sampled_action = np.random.uniform(self.action_low, self.action_high)
+            # calculate cosine similarity between actions
+            cos_sim = np.dot(sampled_action, original_action) / (
+                norm(sampled_action) * norm(original_action)
+            )
 
-
-
+            if cos_sim >= alpha:
+                return sampled_action
 
 
 class QuadraticAlphaSolver:
@@ -72,4 +99,4 @@ class QuadraticAlphaSolver:
         self.params = solve(A, b)
 
     def get_alpha(self, x: float or int) -> float:
-        return np.dot(self.params, np.array([x ** 2, x, 1]))
+        return np.dot(self.params, np.array([x**2, x, 1]))

@@ -15,8 +15,6 @@ class BasicSampler(Sampler):
 
         # get env action spec
         self.action_low, self.action_high = self.env.action_spec
-
-        # test
         self.action_dim = self.env.action_dim
 
     def sample_step(self, **kwargs):

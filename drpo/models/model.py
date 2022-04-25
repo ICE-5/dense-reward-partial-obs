@@ -88,8 +88,8 @@ class DRPONetwork(nn.Module):
 
     def process_raw_encoded(self, raw_encoded: dict) -> tuple:
         # delta_z
-        # NOTE: comment off to compare
         delta_z = raw_encoded["ft"]
+
         # z
         # TODO: test!
         z = [raw_encoded[s] for s in self.sensors if s != "ft"]

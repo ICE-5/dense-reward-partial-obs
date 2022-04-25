@@ -78,7 +78,7 @@ class Sampler(ABC):
             )
 
             # sample demo
-            self.sample_demo(demo_name=demo_name, states=states)
+            self.sample_demo(demo_name=demo_name, states=states, actions=actions)
 
         # save and close file
         self.data_file.close()
@@ -88,7 +88,7 @@ class Sampler(ABC):
             open(self.out_dir / "codes.pkl", "wb"),
         )
 
-    def sample_demo(self, demo_name: str, states: np.ndarray) -> None:
+    def sample_demo(self, demo_name: str, states: np.ndarray, actions: np.ndarray) -> None:
         n = len(states)
 
         # get steps to sample
@@ -108,6 +108,7 @@ class Sampler(ABC):
                 "level": level,
                 "initial_global_timestep": timestep,
                 "initial_state": states[timestep + 1],
+                "original_actions": actions
             }
             self.sample_step(**kwargs)
 
@@ -152,6 +153,7 @@ class Sampler(ABC):
         n = len(actions)
         ft_arr = np.zeros([n, 6])
         image_arr = np.zeros([n, 128, 128, 3])
+        depth_arr = np.zeros([n, 128, 128, 1])
         proprio_arr = np.zeros([n, 32])
         action_arr = np.zeros([n, 7])
         reward_arr = np.zeros(n)
@@ -166,6 +168,7 @@ class Sampler(ABC):
             ft_arr[j, :3] = force
             ft_arr[j, 3:] = torque
             image_arr[j, :, :, :] = obs["agentview_image"]
+            depth_arr[j, :, :, :] = obs["agentview_depth"]
             proprio_arr[j, :] = obs["robot0_proprio-state"]
             action_arr[j, :] = action
             reward_arr[j] = reward
@@ -179,6 +182,7 @@ class Sampler(ABC):
 
         # save container in hdf5
         branch_grp.create_dataset("image", data=np.array(image_arr))
+        branch_grp.create_dataset("depth", data=np.array(depth_arr))
         branch_grp.create_dataset("ft", data=np.array(ft_arr))
         branch_grp.create_dataset("proprio", data=np.array(proprio_arr))
         branch_grp.create_dataset("action", data=np.array(action_arr))

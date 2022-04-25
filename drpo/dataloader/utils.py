@@ -114,6 +114,7 @@ def get_obs_by_code(
     obs["action"] = data[f"data/{d}/{b}/action"][l]
     obs["proprio"] = data[f"data/{d}/{b}/proprio"][l]
     obs["image"] = data[f"data/{d}/{b}/image"][l]
+    obs["depth"] = data[f"data/{d}/{b}/depth"][l]
 
     # COMMENT OFF: for debug and eval
     obs["code"] = code
@@ -162,6 +163,12 @@ def get_demo_codes_by_name(codes: list, demo_name: str) -> list:
     return sorted(demo_codes, key=lambda x: int(x.split(".")[2]))
 
 
+def process_code(code: str) -> Tuple[str, int, int, int]:
+    d, b, g, l = code.split(".")
+    b, g, l = int(b), int(g), int(l)
+    return (d, b, g, l)
+
+
 def to_cuda(data_dict: dict):
     if data_dict is None:
         return None
@@ -171,12 +178,6 @@ def to_cuda(data_dict: dict):
 def _is_stem(code: str) -> bool:
     _, b, _, _ = process_code(code)
     return int(b) == 0
-
-
-def process_code(code: str) -> Tuple[str, int, int, int]:
-    d, b, g, l = code.split(".")
-    b, g, l = int(b), int(g), int(l)
-    return (d, b, g, l)
 
 
 def _process_obs(obs: dict, use_action_in_delta: True, unsqueeze: bool = False) -> dict:
@@ -192,6 +193,7 @@ def _process_obs(obs: dict, use_action_in_delta: True, unsqueeze: bool = False) 
     processed_obs["proprio"] = obs["proprio"]
     # image, [128, 128, 3] -> [3, 128, 128]
     processed_obs["image"] = obs["image"].transpose((2, 0, 1))
+    processed_obs["depth"] = obs["depth"].transpose((2, 0, 1))
 
     # convert to torch double tensor
     processed_obs = {k: torch.Tensor(v).double() for (k, v) in processed_obs.items()}

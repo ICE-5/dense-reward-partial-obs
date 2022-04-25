@@ -1,14 +1,15 @@
 # demo
-demo_path: "demos/demo.hdf5"
+demo_path: "demos/demo_3.hdf5"
 demo_names: ["demo_1", "demo_2"]
 
 # GPU
 use_gpu: True
 
 # sampling                  
-sampler: "BasicSampler"
+# sampler: "BasicSampler"
+sampler: "TemporalSampler"
 sampling_forward: True
-sampling_interval: 500
+sampling_interval: 50
 num_branches: 5                                       # number of samples to generate at each depth
 num_steps_per_branch: 15
 
@@ -19,7 +20,7 @@ control_angle_mid: 85
 
 # dataset
 data_dir: "data"
-split_ratio: 0.5
+split_ratio: 0.7
 
 # observation dims
 ft_window_size: 1                                     # number of frame to concatenate into one observation
@@ -29,7 +30,8 @@ proprio_dim: 32
 image_dim: 128
 
 # network architecture
-sensors: ["ft", "image", "proprio"]                 # must have: "ft" , can have: "image", "proprio".
+sensors: ["ft", "proprio", "depth"]
+# sensors: ["ft", "image", "proprio", "depth"]                 # must have: "ft" , can have: "image", "proprio", "depth".
 architecture: 3
 ft_network_type: "MLP"                                # choose one: "MLP" / "LSTM"
 z_dim: 64                                             # try 48
@@ -42,8 +44,8 @@ num_workers: 0
 lr: 0.0003
 weight_decay: 0.000005
 num_iters: 1000000
-log_freq: 1           # 200
-save_freq: 1          # 200
+log_freq: 10           # 200
+save_freq: 50          # 200
 
 # loss
 reconstruction_lambda: 0.2
