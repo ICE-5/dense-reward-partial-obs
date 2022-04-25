@@ -1,9 +1,11 @@
+from sre_constants import SUCCESS
 import h5py
 import numpy as np
 import pathlib
 import pickle
 
 from abc import ABC, abstractmethod
+from tqdm import tqdm
 
 from robosuite.utils.mjcf_utils import postprocess_model_xml
 
@@ -68,11 +70,16 @@ class Sampler(ABC):
             states = self.demo_file[f"data/{demo_name}/states"][()]
             actions = self.demo_file[f"data/{demo_name}/actions"][()]
 
+            # load original state
+            self.load_state_with_actions(timestep=-1, states=states, actions=actions)
+            # self.load_state(states[0])
+
             # record original demo
             self.record_branch(
                 demo_name=demo_name,
+                demo_states=states,
+                demo_actions=actions,
                 branch_index=0,
-                initial_state=states[0],
                 initial_global_timestep=-1,
                 actions=actions,
             )
@@ -88,7 +95,9 @@ class Sampler(ABC):
             open(self.out_dir / "codes.pkl", "wb"),
         )
 
-    def sample_demo(self, demo_name: str, states: np.ndarray, actions: np.ndarray) -> None:
+    def sample_demo(
+        self, demo_name: str, states: np.ndarray, actions: np.ndarray
+    ) -> None:
         n = len(states)
 
         # get steps to sample
@@ -105,10 +114,10 @@ class Sampler(ABC):
         for level, timestep in enumerate(sampling_timesteps):
             kwargs = {
                 "demo_name": demo_name,
+                "demo_states": states,
+                "demo_actions": actions,
                 "level": level,
                 "initial_global_timestep": timestep,
-                "initial_state": states[timestep + 1],
-                "original_actions": actions
             }
             self.sample_step(**kwargs)
 
@@ -122,14 +131,29 @@ class Sampler(ABC):
         raise NotImplementedError()
 
     def load_state(self, state):
+        self.env.sim.reset()
         self.env.sim.set_state_from_flattened(state)
         self.env.sim.forward()
+
+    def load_state_with_actions(
+        self, timestep: int, states: np.ndarray, actions: np.ndarray
+    ):
+        self.env.sim.reset()
+        self.env.sim.set_state_from_flattened(states[0])
+        self.env.sim.forward()
+
+        if timestep >= 0:
+            for j, action in enumerate(actions):
+                self.env.step(action)
+                if j > timestep:
+                    break
 
     def record_branch(
         self,
         demo_name: str,
+        demo_states: np.ndarray,
+        demo_actions: np.ndarray,
         branch_index: (int or str),
-        initial_state: np.ndarray,
         initial_global_timestep: int,
         actions: np.ndarray,
     ) -> None:
@@ -146,8 +170,10 @@ class Sampler(ABC):
         demo_grp = self.grp[demo_name]
         branch_grp = demo_grp.create_group(str(branch_index))
 
-        # reset env
-        self.load_state(initial_state)
+        # # reset env
+        self.load_state_with_actions(
+            timestep=initial_global_timestep, states=demo_states, actions=demo_actions
+        )
 
         # create container by num of actions
         n = len(actions)

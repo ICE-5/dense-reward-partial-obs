@@ -49,4 +49,4 @@ save_freq: 200          # 200
 
 # loss
 reconstruction_lambda: 1
-temporal_enforcement_lambda: 1
+temporal_enforcement_lambda: 10

@@ -55,6 +55,8 @@ def generate_dataset(
         spl = sampler(config=config, demo_path=demo_path, out_dir=out_dir)
         # spl = exec(config["sampler"])(config, demo_path, out_dir)
         # spl = sampler(config, demo_path, out_dir)
+
+        prGreen(f"\nSUCCESS | init sampling with {config['sampler']}\n")
         spl.sample(demo_names)
 
     codes_path = out_dir / "codes.pkl"

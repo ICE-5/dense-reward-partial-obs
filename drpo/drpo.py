@@ -13,8 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 from drpo.models.model import DRPONetwork
 from drpo.dataloader.dataset import DRPODataset
 from drpo.dataloader.utils import to_cuda, get_demo_endpoint_code, get_obs_by_code
-
-# from drpo.utils import
+from drpo.utils import *
 
 
 class DRPO:
@@ -31,6 +30,7 @@ class DRPO:
         self.device = torch.device(
             "cuda:0" if (torch.cuda.is_available() and config["use_gpu"]) else "cpu"
         )
+        prGreen(self.device)
         self.config = config
 
         # model
@@ -115,7 +115,7 @@ class DRPO:
             weight_decay=self.config["weight_decay"],
         )
 
-        print("Training started")
+        prGreen(f"\nSUCCESS | init training \n")
         iters, epoch = 0, 0
         while iters < self.config["num_iters"]:
             epoch += 1

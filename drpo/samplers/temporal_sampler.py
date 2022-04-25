@@ -31,14 +31,14 @@ class TemporalSampler(Sampler):
 
         try:
             demo_name = kwargs["demo_name"]
+            demo_states=kwargs["demo_states"]
+            demo_actions=kwargs["demo_actions"]
             level = kwargs["level"]
-            initial_state = kwargs["initial_state"]
             initial_global_timestep = kwargs["initial_global_timestep"]
-            original_actions = kwargs["original_actions"]
         except KeyError:
             print("Missing necessary parameters for sampling.")
 
-        n = len(original_actions)
+        n = len(demo_actions)
 
         for b in range(self.num_branches):
 
@@ -49,7 +49,7 @@ class TemporalSampler(Sampler):
                 progress = t / n
                 alpha = self.alpha_solver.get_alpha(progress)
                 sampled_action = self._sample_action_with_control(
-                    original_action=original_actions[t], alpha=alpha
+                    demo_action=demo_actions[t], alpha=alpha
                 )
                 sampled_actions[j, :] = sampled_action
 
@@ -57,26 +57,27 @@ class TemporalSampler(Sampler):
 
             self.record_branch(
                 demo_name=demo_name,
+                demo_states=demo_states,
+                demo_actions=demo_actions,
                 branch_index=branch_index,
-                initial_state=initial_state,
                 initial_global_timestep=initial_global_timestep,
                 actions=sampled_actions,
             )
 
     def _sample_action_with_control(
-        self, original_action: np.ndarray, alpha: float = 0.0
+        self, demo_action: np.ndarray, alpha: float = 0.0
     ) -> np.ndarray:
         """Sample action controlled variance
 
         Args:
-            original_action (np.ndarray): the action to compare with
+            demo_action (np.ndarray): the action to compare with
             alpha (float, optional): control parameter for cosine similarity. Defaults to 0..
         """
         while True:
             sampled_action = np.random.uniform(self.action_low, self.action_high)
             # calculate cosine similarity between actions
-            cos_sim = np.dot(sampled_action, original_action) / (
-                norm(sampled_action) * norm(original_action)
+            cos_sim = np.dot(sampled_action, demo_action) / (
+                norm(sampled_action) * norm(demo_action)
             )
 
             if cos_sim >= alpha:

@@ -21,8 +21,9 @@ class BasicSampler(Sampler):
 
         try:
             demo_name = kwargs["demo_name"]
+            demo_states = kwargs["demo_states"]
+            demo_actions = kwargs["demo_actions"]
             level = kwargs["level"]
-            initial_state = kwargs["initial_state"]
             initial_global_timestep = kwargs["initial_global_timestep"]
         except KeyError:
             print("Missing necessary parameters for sampling.")
@@ -38,8 +39,9 @@ class BasicSampler(Sampler):
 
             self.record_branch(
                 demo_name=demo_name,
+                demo_states=demo_states,
+                demo_actions=demo_actions,
                 branch_index=branch_index,
-                initial_state=initial_state,
                 initial_global_timestep=initial_global_timestep,
                 actions=sampled_actions,
             )
