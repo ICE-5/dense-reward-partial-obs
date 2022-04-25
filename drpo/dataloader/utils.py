@@ -79,7 +79,6 @@ def get_ft_window_by_code(data: File, code: str, ft_window_size: int) -> np.ndar
         if _is_stem(code):
             # get part_2 by padding
             part_2 = np.zeros([ft_window_size - l - 1, 6])
-            print(part_1.shape, part_2.shape)
             return np.concatenate([part_2, part_1], axis=0)
         else:
             # get part_2 from stem
