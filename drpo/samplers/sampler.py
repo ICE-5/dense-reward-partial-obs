@@ -10,6 +10,7 @@ from tqdm import tqdm
 from robosuite.utils.mjcf_utils import postprocess_model_xml
 
 from drpo.envs.envs_launcher import env_creator
+from drpo.utils import prGreen, prYellow
 
 
 class Sampler(ABC):
@@ -174,6 +175,9 @@ class Sampler(ABC):
         self.load_state_with_actions(
             timestep=initial_global_timestep, states=demo_states, actions=demo_actions
         )
+        playback_state = self.env.sim.get_state().flatten()
+
+        prYellow(f"WARNING| state diff: {np.linalg.norm(playback_state - demo_states[initial_global_timestep + 1])}")
 
         # create container by num of actions
         n = len(actions)
