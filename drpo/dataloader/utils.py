@@ -119,10 +119,10 @@ def get_obs_by_code(
     obs["code"] = code
     obs["reward"] = data[f"data/{d}/{b}/reward"][l]
 
-    return obs
-    # return _process_obs(
-    #     obs=obs, use_action_in_delta=use_action_in_delta, unsqueeze=unsqueeze
-    # )
+    # return obs
+    return _process_obs(
+        obs=obs, use_action_in_delta=use_action_in_delta, unsqueeze=unsqueeze
+    )
 
 
 def get_demo_endpoint_code(

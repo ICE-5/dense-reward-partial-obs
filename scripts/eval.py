@@ -163,7 +163,7 @@ if __name__ == "__main__":
     ys["dense reward"] = dense_reward_arr
     ys["original reward"] = original_reward_arr
 
-    plot_curves(
+    plot_smooth_curves(
         x=x,
         ys=ys,
         save_dir=save_dir,

@@ -1,17 +1,18 @@
 # demo
 demo_path: "demos/demo_3.hdf5"
-demo_names: ["demo_1", "demo_2"]
+# demo_names: ["demo_1", "demo_2"]
+demo_names: ["demo_1", ]
 
 # GPU
-use_gpu: True
+use_gpu: False
 
 # sampling                  
-# sampler: "BasicSampler"
-sampler: "TemporalSampler"
+sampler: "BasicSampler"
+# sampler: "TemporalSampler"
 sampling_forward: True
 sampling_interval: 50
 num_branches: 5                                       # number of samples to generate at each depth
-num_steps_per_branch: 15
+num_steps_per_branch: 32
 
 control_angle_goal: 15
 control_angle_start: 45

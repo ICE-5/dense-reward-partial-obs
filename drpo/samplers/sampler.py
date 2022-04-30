@@ -5,7 +5,6 @@ import pathlib
 import pickle
 
 from abc import ABC, abstractmethod
-from tqdm import tqdm
 
 from robosuite.utils.mjcf_utils import postprocess_model_xml
 

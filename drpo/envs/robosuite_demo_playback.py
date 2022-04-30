@@ -157,7 +157,7 @@ if __name__ == "__main__":
     plt.figure(figsize=(25, 5))
     plt.title(f"Episode {ep}")
     for i in range(6):
-        plt.plot(np.arange(N), ft[:, i], linewidth=0.5)
+        plt.plot(np.arange(n), ft[:, i], linewidth=0.5)
     plt.show()
 
 
