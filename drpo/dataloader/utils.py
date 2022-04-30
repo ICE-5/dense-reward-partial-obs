@@ -99,6 +99,7 @@ def get_obs_by_code(
     code: str,
     ft_window_size: int,
     use_action_in_delta: bool = True,
+    use_object_in_proprio: bool = True,
     unsqueeze: bool = False,
 ) -> dict:
     obs = {}
@@ -112,16 +113,20 @@ def get_obs_by_code(
 
     obs["action"] = data[f"data/{d}/{b}/action"][l]
     obs["proprio"] = data[f"data/{d}/{b}/proprio"][l]
+    obs["object"] = data[f"data/{d}/{b}/object"][l]
     obs["image"] = data[f"data/{d}/{b}/image"][l]
     obs["depth"] = data[f"data/{d}/{b}/depth"][l]
 
     # COMMENT OFF: for debug and eval
-    obs["code"] = code
-    obs["reward"] = data[f"data/{d}/{b}/reward"][l]
+    # obs["code"] = code
+    # obs["reward"] = data[f"data/{d}/{b}/reward"][l]
 
     # return obs
     return _process_obs(
-        obs=obs, use_action_in_delta=use_action_in_delta, unsqueeze=unsqueeze
+        obs=obs,
+        use_action_in_delta=use_action_in_delta,
+        use_object_in_proprio=use_object_in_proprio,
+        unsqueeze=unsqueeze,
     )
 
 
@@ -184,18 +189,28 @@ def _is_stem(code: str) -> bool:
     return int(b) == 0
 
 
-def _process_obs(obs: dict, use_action_in_delta: True, unsqueeze: bool = False) -> dict:
+def _process_obs(
+    obs: dict,
+    use_action_in_delta: bool = True,
+    use_object_in_proprio: bool = True,
+    unsqueeze: bool = False,
+) -> dict:
     processed_obs = {}
     # ft
     if use_action_in_delta:
         processed_obs["ft"] = np.concatenate([obs["ft"].flatten(), obs["action"]])
     else:
-        processed_obs["ft"] = obs["ft"]
+        processed_obs["ft"] = obs["ft"].flatten()
+
+    # proprio
+    if use_object_in_proprio:
+        processed_obs["proprio"] = np.concatenate([obs["proprio"], obs["object"]])
+    else:
+        processed_obs["proprio"] = obs["proprio"]
+
     # action, [7, ]
     processed_obs["action"] = obs["action"]
-    # proprio, [32,]
-    processed_obs["proprio"] = obs["proprio"]
-    # image, [128, 128, 3] -> [3, 128, 128]
+    # image/depth, [128, 128, C] -> [C, 128, 128]
     processed_obs["image"] = obs["image"].transpose((2, 0, 1))
     processed_obs["depth"] = obs["depth"].transpose((2, 0, 1))
 

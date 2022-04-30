@@ -1,4 +1,5 @@
 import csv
+from distutils.command.config import config
 import h5py
 import numpy as np
 import pathlib
@@ -65,6 +66,8 @@ class DRPO:
         # architecture sanity check
         self.architecture = config["architecture"]
         assert self.architecture in [1, 2, 3]
+        self.use_action_in_delta = config["use_action_in_delta"]
+        self.use_object_in_proprio = config["use_object_in_proprio"]
 
         # sensor / modality
         self.sensors = config["sensors"]
@@ -315,12 +318,16 @@ class DRPO:
             data=data,
             code=init_code,
             ft_window_size=self.ft_window_size,
+            use_action_in_delta=self.use_action_in_delta,
+            use_object_in_proprio=self.use_object_in_proprio,
             unsqueeze=True,
         )
         obs_goal = get_obs_by_code(
             data=data,
             code=goal_code,
             ft_window_size=self.ft_window_size,
+            use_action_in_delta=self.use_action_in_delta,
+            use_object_in_proprio=self.use_object_in_proprio,
             unsqueeze=True,
         )
 

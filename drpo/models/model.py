@@ -49,14 +49,14 @@ class DRPONetwork(nn.Module):
 
         # the sensor should always include ft, plus other sensor such as depthmap
         for sensor in self.sensors:
-            if sensor == "ft":
-                params = {
-                    "ft_window_size": config["ft_window_size"],
-                    "use_action_in_delta": config["use_action_in_delta"],
-                    "action_dim": config["action_dim"],
-                }
-            else:
-                params = {}
+            # if sensor == "ft":
+            #     params = {
+            #         "ft_window_size": config["ft_window_size"],
+            #         "use_action_in_delta": config["use_action_in_delta"],
+            #         "action_dim": config["action_dim"],
+            #     }
+            # else:
+            #     params = {}
 
             # encoder
             # TODO: add adaptibility for image and depth
@@ -64,7 +64,7 @@ class DRPONetwork(nn.Module):
                 self,
                 f"{sensor}_encoder",
                 eval(f"{sensor.capitalize()}Encoder")(
-                    z_dim=self.z_dim, initialize_weights=initialize_weights, **params
+                    z_dim=self.z_dim, initialize_weights=initialize_weights, **config
                 ),
             )
 
@@ -73,7 +73,7 @@ class DRPONetwork(nn.Module):
                 self,
                 f"{sensor}_decoder",
                 eval(f"{sensor.capitalize()}Decoder")(
-                    z_dim=self.z_dim, initialize_weights=initialize_weights, **params
+                    z_dim=self.z_dim, initialize_weights=initialize_weights, **config
                 ),
             )
 

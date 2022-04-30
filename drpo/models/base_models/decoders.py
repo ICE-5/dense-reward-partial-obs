@@ -15,30 +15,24 @@ class FtDecoderMLP(nn.Module):
     Output size: []
     """
         super().__init__()
-        self.z_dim = z_dim
 
         try:
-            self.ft_window_size = kwargs["ft_window_size"]
-            self.use_action_in_delta = kwargs["use_action_in_delta"]
-            self.action_dim = kwargs["action_dim"]
-        except:
+            if kwargs["use_action_in_delta"]:
+                out_dim = 6 * kwargs["ft_window_size"] + kwargs["action_dim"]
+            else:
+                out_dim = 6 * kwargs["ft_window_size"]
+        except KeyError:
             raise IOError("Missing essential arguments.")
-
-        # adapt to different window size, by default use 8
-        if self.use_action_in_delta:
-            self.out_dim = 6 * self.ft_window_size + self.action_dim
-        else:
-            self.out_dim = 6 * self.ft_window_size
 
 
         self.decoder = nn.Sequential(
-            nn.Linear(self.z_dim, 128),
+            nn.Linear(z_dim, 128),
             nn.LeakyReLU(0.1, inplace=True),
             nn.Linear(128, 128),
             nn.LeakyReLU(0.1, inplace=True),
             nn.Linear(128, 64),
             nn.LeakyReLU(0.1, inplace=True),
-            nn.Linear(64, self.out_dim),
+            nn.Linear(64, out_dim),
             nn.LeakyReLU(0.1, inplace=True),
         )
 
@@ -46,41 +40,39 @@ class FtDecoderMLP(nn.Module):
             init_weights(self.modules())
 
     def forward(self, delta_z):
-        out = self.decoder(delta_z)
-        return out.reshape([-1, 6, self.ft_window_size])
+        return self.decoder(delta_z)
 
 
-# TODO: craft and tune LSTM decoder
-class FtDecoderLSTM(nn.Module):
-    def __init__(self, z_dim, initialize_weights=True, **kwargs):
-        """
-    FT (force/torque) decoder
-    Output size: []
-    """
-        super().__init__()
-        self.z_dim = z_dim
+# class FtDecoderLSTM(nn.Module):
+#     def __init__(self, z_dim, initialize_weights=True, **kwargs):
+#         """
+#     FT (force/torque) decoder
+#     Output size: []
+#     """
+#         super().__init__()
+#         self.z_dim = z_dim
 
-        # adapt to different window size, by default use 8
-        if "ft_window_size" in kwargs.keys():
-            self.ft_window_size = kwargs["ft_window_size"]
-        else:
-            self.ft_window_size = 8
+#         # adapt to different window size, by default use 8
+#         if "ft_window_size" in kwargs.keys():
+#             self.ft_window_size = kwargs["ft_window_size"]
+#         else:
+#             self.ft_window_size = 8
 
-        self.decoder = nn.LSTM(input_size=self.z_dim, hidden_size=32, batch_first=True,)
-        self.dense = nn.Parameter(
-            torch.randn((1, 32, 6), dtype=torch.double), requires_grad=True
-        )
+#         self.decoder = nn.LSTM(input_size=self.z_dim, hidden_size=32, batch_first=True,)
+#         self.dense = nn.Parameter(
+#             torch.randn((1, 32, 6), dtype=torch.double), requires_grad=True
+#         )
 
-        if initialize_weights:
-            init_weights(self.modules())
+#         if initialize_weights:
+#             init_weights(self.modules())
 
-    def forward(self, z):
-        z = z.unsqueeze(1).repeat(1, self.ft_window_size, 1)
-        # shape efore piping into LSTM: [batch_size, ft_window_size, z_dim]
-        out, _ = self.decoder(z)
-        out = torch.matmul(out, self.dense)
-        # output should be [batch_size, 6]
-        return out.reshape([-1, 6, self.ft_window_size])
+#     def forward(self, z):
+#         z = z.unsqueeze(1).repeat(1, self.ft_window_size, 1)
+#         # shape efore piping into LSTM: [batch_size, ft_window_size, z_dim]
+#         out, _ = self.decoder(z)
+#         out = torch.matmul(out, self.dense)
+#         # output should be [batch_size, 6]
+#         return out.reshape([-1, 6, self.ft_window_size])
 
 
 class ImageDecoder(nn.Module):
@@ -88,11 +80,10 @@ class ImageDecoder(nn.Module):
 
     def __init__(self, z_dim, initialize_weights, **kwargs):
         super().__init__()
-        self.z_dim = z_dim
 
         self.decoder = nn.Sequential(
             nn.ConvTranspose2d(
-                self.z_dim, 128, kernel_size=2, stride=1
+                z_dim, 128, kernel_size=2, stride=1
             ),  # input: b*z_dim*1*1
             nn.Dropout(0.5),
             nn.LeakyReLU(0.1, inplace=True),
@@ -135,11 +126,11 @@ class DepthDecoder(nn.Module):
 
     def __init__(self, z_dim, initialize_weights, **kwargs):
         super().__init__()
-        self.z_dim = z_dim
+        z_dim = z_dim
 
         self.decoder = nn.Sequential(
             nn.ConvTranspose2d(
-                self.z_dim, 128, kernel_size=2, stride=1
+                z_dim, 128, kernel_size=2, stride=1
             ),  # input: b*z_dim*1*1
             # nn.Dropout(0.5),
             nn.LeakyReLU(0.1, inplace=True),
@@ -174,23 +165,30 @@ class DepthDecoder(nn.Module):
 
 
 class ProprioDecoder(nn.Module):
-    def __init__(self, z_dim, initialize_weights=True):
+    def __init__(self, z_dim, initialize_weights=True, **kwargs):
         """
     Decodes the proprio.
     input size: n*z_dim
     """
         super().__init__()
 
-        self.z_dim = z_dim
+        try:
+            if kwargs["use_object_in_proprio"]:
+                out_dim = kwargs["proprio_dim"] + kwargs["object_dim"]
+            else:
+                out_dim = kwargs["proprio_dim"]
+        
+        except KeyError:
+            raise IOError("Missing essential arguments.")
 
         self.proprio_decoder = nn.Sequential(
-            nn.Linear(self.z_dim, 64),
+            nn.Linear(z_dim, 64),
             # nn.Dropout(0.5),
             nn.LeakyReLU(0.1, inplace=True),
-            nn.Linear(64, 32),
+            nn.Linear(64, 64),
             # nn.Dropout(0.5),
             nn.LeakyReLU(0.1, inplace=True),
-            nn.Linear(32, 32),
+            nn.Linear(64, out_dim),
             # nn.Dropout(0.5),
             nn.LeakyReLU(0.1, inplace=True),
         )

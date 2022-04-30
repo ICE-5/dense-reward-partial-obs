@@ -13,9 +13,12 @@ configs/*
 # data/
 data/*.hdf5
 data/*.pkl
+data/*.txt
+data/*
 
 media/
 debug/
+benchmark/*
 
 # unsync test scripts
 tests/

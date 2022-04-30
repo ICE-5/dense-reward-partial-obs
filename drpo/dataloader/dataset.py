@@ -15,6 +15,8 @@ class DRPODataset(Dataset):
 
         self.data = h5py.File(data_path, "r")
         self.ft_window_size = config["ft_window_size"]
+        self.use_action_in_delta = config["use_action_in_delta"]
+        self.use_object_in_proprio = config["use_object_in_proprio"]
         with open(codes_path, "rb") as p:
             self.codes = pickle.load(p)
 
@@ -26,8 +28,22 @@ class DRPODataset(Dataset):
         code_prev = get_prev_code(code_curr)
 
         return {
-            "obs_curr": get_obs_by_code(self.data, code_curr, self.ft_window_size),
-            "obs_prev": get_obs_by_code(self.data, code_prev, self.ft_window_size),
+            "obs_curr": get_obs_by_code(
+                data=self.data,
+                code=code_curr,
+                ft_window_size=self.ft_window_size,
+                use_action_in_delta=self.use_action_in_delta,
+                use_object_in_proprio=self.use_object_in_proprio,
+                unsqueeze=False,
+            ),
+            "obs_prev": get_obs_by_code(
+                data=self.data,
+                code=code_prev,
+                ft_window_size=self.ft_window_size,
+                use_action_in_delta=self.use_action_in_delta,
+                use_object_in_proprio=self.use_object_in_proprio,
+                unsqueeze=False,
+            ),
         }
 
 
@@ -52,4 +68,6 @@ if __name__ == "__main__":
         print("samples action: ", batch_samples["obs_curr"]["action"].shape)
         print("samples FT: ", batch_samples["obs_curr"]["proprio"].shape)
         print("samples FT: ", batch_samples["obs_curr"]["image"].shape)
-        import pdb; pdb.set_trace()
+        import pdb
+
+        pdb.set_trace()

@@ -20,6 +20,8 @@ class Sampler(ABC):
         out_dir: pathlib.Path,
     ) -> None:
         super().__init__()
+        # load config
+        self.config = config
 
         # create env based on demo
         self.env, self.env_name = env_creator(demo_path)
@@ -181,10 +183,11 @@ class Sampler(ABC):
         # create container by num of actions
         n = len(actions)
         ft_arr = np.zeros([n, 6])
-        image_arr = np.zeros([n, 128, 128, 3])
-        depth_arr = np.zeros([n, 128, 128, 1])
-        proprio_arr = np.zeros([n, 32])
-        action_arr = np.zeros([n, 7])
+        image_arr = np.zeros([n, self.config["image_dim"], self.config["image_dim"], 3])
+        depth_arr = np.zeros([n, self.config["image_dim"], self.config["image_dim"], 1])
+        proprio_arr = np.zeros([n, self.config["proprio_dim"]])
+        object_arr = np.zeros([n, self.config["object_dim"]])
+        action_arr = np.zeros([n, self.config["action_dim"]])
         reward_arr = np.zeros(n)
 
         for j, action in enumerate(actions):
@@ -199,6 +202,7 @@ class Sampler(ABC):
             image_arr[j, :, :, :] = obs["agentview_image"]
             depth_arr[j, :, :, :] = obs["agentview_depth"]
             proprio_arr[j, :] = obs["robot0_proprio-state"]
+            object_arr[j, :] = obs["object-state"]
             action_arr[j, :] = action
             reward_arr[j] = reward
 
@@ -214,5 +218,6 @@ class Sampler(ABC):
         branch_grp.create_dataset("depth", data=np.array(depth_arr))
         branch_grp.create_dataset("ft", data=np.array(ft_arr))
         branch_grp.create_dataset("proprio", data=np.array(proprio_arr))
+        branch_grp.create_dataset("object", data=np.array(object_arr))
         branch_grp.create_dataset("action", data=np.array(action_arr))
         branch_grp.create_dataset("reward", data=np.array(reward_arr))

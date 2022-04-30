@@ -4,7 +4,7 @@ demo_path: "demos/demo_3.hdf5"
 demo_names: ["demo_1", ]
 
 # GPU
-use_gpu: False
+use_gpu: True
 
 # sampling                  
 sampler: "BasicSampler"
@@ -28,6 +28,7 @@ ft_window_size: 8                                     # number of frame to conca
 ft_dim: 6
 action_dim: 7
 proprio_dim: 32
+object_dim: 14
 image_dim: 128
 
 # network architecture
@@ -37,6 +38,7 @@ architecture: 3
 ft_network_type: "MLP"                                # choose one: "MLP" / "LSTM"
 z_dim: 64                                             # try 48
 use_action_in_delta: True
+use_object_in_proprio: True
 
 # training
 initialize_weights: True
