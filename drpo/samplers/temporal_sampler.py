@@ -31,8 +31,8 @@ class TemporalSampler(Sampler):
 
         try:
             demo_name = kwargs["demo_name"]
-            demo_states=kwargs["demo_states"]
-            demo_actions=kwargs["demo_actions"]
+            demo_states = kwargs["demo_states"]
+            demo_actions = kwargs["demo_actions"]
             level = kwargs["level"]
             initial_global_timestep = kwargs["initial_global_timestep"]
         except KeyError:
@@ -45,7 +45,7 @@ class TemporalSampler(Sampler):
             sampled_actions = np.zeros([self.num_steps_per_branch, self.action_dim])
 
             for j in range(self.num_steps_per_branch):
-                t = initial_global_timestep + j + 1
+                t = min(initial_global_timestep + j + 1, n - 1)
                 progress = t / n
                 alpha = self.alpha_solver.get_alpha(progress)
                 sampled_action = self._sample_action_with_control(

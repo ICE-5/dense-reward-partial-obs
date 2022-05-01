@@ -5,6 +5,7 @@ import pathlib
 import pickle
 
 from abc import ABC, abstractmethod
+from tqdm import tqdm
 
 from robosuite.utils.mjcf_utils import postprocess_model_xml
 
@@ -113,7 +114,7 @@ class Sampler(ABC):
             )
 
         # sample at (global) timestep
-        for level, timestep in enumerate(sampling_timesteps):
+        for level, timestep in enumerate(tqdm(sampling_timesteps)):
             kwargs = {
                 "demo_name": demo_name,
                 "demo_states": states,
@@ -178,7 +179,7 @@ class Sampler(ABC):
         )
         playback_state = self.env.sim.get_state().flatten()
 
-        prYellow(f"WARNING| state diff: {np.linalg.norm(playback_state - demo_states[initial_global_timestep + 1])}")
+        prYellow(f"WARNING| {demo_name}-{initial_global_timestep:05d} state diff: {np.linalg.norm(playback_state - demo_states[initial_global_timestep + 1])}")
 
         # create container by num of actions
         n = len(actions)

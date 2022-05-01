@@ -275,11 +275,11 @@ class DRPO:
                         tb_writer.add_scalar(f"Loss_test/{k}", eval(f"test_{k}"), iters)
 
                     # print to terminal
-                    refactored_output = f"iter: {iters:6d}\t"
+                    refactored_output = f"iter: {iters:5d}\t"
                     for i, k in enumerate(self.loss_keys):
-                        refactored_output += f"train_{k}: {output[i]:.4f}\t"
+                        refactored_output += f"train_{k}: {output[i]:.3f}\t"
                     for i, k in enumerate(self.loss_keys):
-                        refactored_output += f"test_{k}: {output[i+3]:.4f}\t"
+                        refactored_output += f"test_{k}: {output[i+3]:.3f}\t"
                     print(refactored_output)
 
                 # perform update
