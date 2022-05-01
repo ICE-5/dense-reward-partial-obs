@@ -1,5 +1,5 @@
 import argparse
-from email import policy
+from datetime import datetime
 import yaml
 import pathlib
 
@@ -36,9 +36,12 @@ if __name__ == "__main__":
         config = yaml.safe_load(f)
 
     demo_path = pathlib.Path(config["demo_path"])
+    benchmark_dir = pathlib.Path("benchmark")
 
     env, env_name = env_creator(demo_path)
     env = GymWrapper(env)
+
+    model_id = datetime.now().strftime("%m%d%Y-%H%M%S")
 
     model = SAC(
         policy="MlpPolicy",
@@ -46,9 +49,12 @@ if __name__ == "__main__":
         optimize_memory_usage=True,
         buffer_size=300,
         verbose=1,
+        tensorboard_log=benchmark_dir,
     )
-    model.learn(total_timesteps=10000,  log_interval=4)
-    model.save("sac_pendulum")
+    model.learn(total_timesteps=10000, log_interval=1, tb_log_name=model_id)
+    model.save(benchmark_dir / "test")
+
+    # model.load()
 
     # obs = env.reset()
     # print(type(obs), obs.shape)

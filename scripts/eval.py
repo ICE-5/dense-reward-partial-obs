@@ -95,8 +95,9 @@ if __name__ == "__main__":
         x=x,
         ys=ys,
         save_dir=save_dir,
-        title=f"{demo_name}",
         save_name=f"{demo_name}",
+        xlabel="Steps",
+        ylabel="Rewards"
     )
 
     prGreen(f"\nSUCCESS | directory with plots: {save_dir}\n")

@@ -22,6 +22,7 @@ benchmark/*
 
 # unsync test scripts
 tests/
+scripts/plot_benchmark.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

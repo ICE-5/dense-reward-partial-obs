@@ -38,7 +38,7 @@ architecture: 3
 ft_network_type: "MLP"                                # choose one: "MLP" / "LSTM"
 z_dim: 64                                             # try 48
 use_action_in_delta: True
-use_object_in_proprio: True
+use_object_in_proprio: False
 
 # training
 initialize_weights: True

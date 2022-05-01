@@ -24,11 +24,8 @@ class DRPONetwork(nn.Module):
         )
 
         self.config = config
-        self.z_dim = config["z_dim"]
         self.sensors = config["sensors"]
         self.architecture = config["architecture"]
-        self.use_action_in_delta = config["use_action_in_delta"]
-        initialize_weights = config["initialize_weights"]
 
         # there must be FT sensor to provide delta_z info
         assert "ft" in self.sensors
@@ -40,41 +37,26 @@ class DRPONetwork(nn.Module):
             self.multimodal = True
             self.num_other_sensors = len(self.sensors) - 1
             self.fusion = FusionNet(
-                concat_z_dim=(len(self.sensors) - 1) * self.z_dim,
-                output_z_dim=self.z_dim,
-                initialize_weights=initialize_weights,
+                concat_z_dim=(len(self.sensors) - 1) * config["z_dim"],
+                output_z_dim=config["z_dim"],
+                initialize_weights=config["initialize_weights"],
             )
         else:
             self.multimodal = False
 
         # the sensor should always include ft, plus other sensor such as depthmap
         for sensor in self.sensors:
-            # if sensor == "ft":
-            #     params = {
-            #         "ft_window_size": config["ft_window_size"],
-            #         "use_action_in_delta": config["use_action_in_delta"],
-            #         "action_dim": config["action_dim"],
-            #     }
-            # else:
-            #     params = {}
-
-            # encoder
-            # TODO: add adaptibility for image and depth
             setattr(
                 self,
                 f"{sensor}_encoder",
-                eval(f"{sensor.capitalize()}Encoder")(
-                    z_dim=self.z_dim, initialize_weights=initialize_weights, **config
-                ),
+                eval(f"{sensor.capitalize()}Encoder")(**config),
             )
 
             # decoder
             setattr(
                 self,
                 f"{sensor}_decoder",
-                eval(f"{sensor.capitalize()}Decoder")(
-                    z_dim=self.z_dim, initialize_weights=initialize_weights, **config
-                ),
+                eval(f"{sensor.capitalize()}Decoder")(**config),
             )
 
         # TODO: try cross-entropy loss

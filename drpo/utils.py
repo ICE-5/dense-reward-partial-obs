@@ -13,107 +13,112 @@ import csv
 from numpy import genfromtxt
 from numpy.random import choice
 
+
 def prGreen(skk):
-    print("\033[92m {}\033[00m" .format(skk))
+    print("\033[92m {}\033[00m".format(skk))
 
 
 def prRed(skk):
-    print("\033[91m {}\033[00m" .format(skk))
+    print("\033[91m {}\033[00m".format(skk))
+
 
 def prYellow(skk):
-    print("\033[33m {}\033[00m" .format(skk))
+    print("\033[33m {}\033[00m".format(skk))
 
+def plot_smooth_curves(
+    x: list or np.ndarray,
+    ys: dict,
+    save_dir: str,
+    save_name: str,
+    smoothing_window: int = 8,
+    title: str = None,
+    ys_max: dict = None,
+    ys_min: dict = None,
+    scale: float = 1.,
+    xlabel: str = None,
+    ylabel: str = None,
+    font_size: int = 18,
+):
+    colors = ["#1f77b4", "#ff7f0e", "#d62728", "#9467bd", "#2ca02c", "#8c564b", "#e377c2", "#bcbd22", "#17becf"]
 
-def plot_smooth_curves(x: list or np.ndarray, ys: dict, title: str, save_dir: str, save_name: str):
-    colors = ["#1f77b4", "#ff7f0e"]
-    # colors = ["#d62728", "#9467bd"]
-    # colors = ["#2ca02c", "#8c564b"] 
-    # colors = ["#e377c2", "#bcbd22"] 
-            # "#17becf"
-    
-    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
-    
-    # buffer_types = ["without DER", "with DER"]
-    
-    # title = "No Human Demos"
-    # title = "One Shot in All Buffers"
-    # title = "All Shots in All Buffers"
-    # title = "Each Buffer Taking One Shot"
-    
-    title = " "
-    
-    # all_rates = [] 
-    # for i in range(len(buffer_types)):
-    #     all_rates.append([])
-    
-    # with open('raw_data/no_demos_comp/15_offset.csv') as f:
-    #     reader = csv.reader(f, delimiter=',')
-    #     next(reader) # skip the header 
-    #     for row in reader:
-    
-    #         for i in range(len(all_rates)):
-    #             if row[i] != "":
-    #                 all_rates[i].append(float(row[i]))
-    
-    smoothing_window = 8
+    linestyles = ["solid", "dashed", "dashdot", "dotted"]
+
+    if not title:
+        title = " "
+
     fig = plt.figure(figsize=(16, 8))
-    color_index = 0;
-    
-    ax = plt.subplot() # Defines ax variable by creating an empty plot
-    
+    color_index = 0
+
+    ax = plt.subplot()  # Defines ax variable by creating an empty plot
+    plt.ylim([0., 1.])
+
     # Set the tick labels font
-    for label in (ax.get_xticklabels() + ax.get_yticklabels()):
-        label.set_fontname('Arial')
-        label.set_fontsize(24)
-    
+    for label in ax.get_xticklabels() + ax.get_yticklabels():
+        label.set_fontname("Arial")
+        label.set_fontsize(font_size)
+
     for label, y in ys.items():
-    
-        y_smoothed = uniform_filter1d(y, size=smoothing_window)
-    
+
+        y_smoothed = uniform_filter1d(y, size=smoothing_window) * scale
 
         # NOTE: caution
         # print(y_smoothed.shape)
-        y_smoothed[-10:]=1.0
+        # y_smoothed[-10:] = 1.0
 
         # plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
-        ax.xaxis.get_offset_text().set_fontsize(24)
-    
-        # Running average for lines 
-        plt.plot(x, y_smoothed, 
-                # label=buffer_types[color_index], 
-                # label=label,
-                color=colors[color_index], 
-                ls=linestyles[0]
-                )
-    
-    
+        ax.xaxis.get_offset_text().set_fontsize(font_size)
+
+
+        # Running average for lines
+
+        plt.plot(
+            x,
+            y_smoothed,
+            label=label+" rewards",
+            color=colors[color_index],
+            ls=linestyles[0],
+        )
+
+        if ys_min:
+            y_min = ys_min[label]
+        
+        
+
+        y_min = ys_min[label]  if ys_min else 0
+        y_max = ys_max[label]  if ys_max else np.max([y_smoothed, y])
+
+        y_min_smoothed = uniform_filter1d(y_min, size=smoothing_window) * scale
+        y_max_smoothed = uniform_filter1d(y_max, size=smoothing_window) * scale
+
+
+
         plt.fill_between(
-                        range(len(y)), 
-                        0, 
-                        y_smoothed,
-                        label=label,
-                        alpha=0.2, 
-                        edgecolor=colors[color_index], 
-                        facecolor=colors[color_index]
-                        )
-    
+            range(len(y)),
+            y_min_smoothed,
+            y_max_smoothed,
+            # label=label,
+            alpha=0.2,
+            edgecolor=colors[color_index],
+            facecolor=colors[color_index],
+        )
+
         color_index += 1
-    
+
     # plt.axhline(y=0.8, alpha=0.5, color='#000000', linestyle='dotted')
-    
-    axis_font = {'fontname':'Arial', 'size':'24'}
-    plt.legend(loc='lower right', prop={'size' : 24})
-    plt.xlabel("Steps", **axis_font)
-    plt.ylabel("Reward", **axis_font)
-    plt.title("%s"% title, **axis_font)
-    
+
+    axis_font = {"fontname": "Arial", "size": font_size}
+    plt.legend(loc="lower right", prop={"size": font_size - 2})
+    plt.xlabel(xlabel, **axis_font)
+    plt.ylabel(ylabel, **axis_font)
+    plt.title("%s" % title, **axis_font)
+
     # plt.show()
     # fig.savefig('%s.pdf' % title, dpi=fig.dpi, bbox_inches='tight')
     save_dir = pathlib.Path(save_dir)
     save_dir.mkdir(parents=True, exist_ok=True)
     if "png" not in save_name:
         save_name += ".png"
-    plt.savefig(save_dir / save_name, bbox_inches='tight')
+    plt.savefig(save_dir / save_name, dpi=fig.dpi, bbox_inches="tight")
     plt.close()
 
 
@@ -150,7 +155,6 @@ def vis_loss(loss_file: str or pathlib.Path, save_dir: str) -> None:
                 eval_loss.append(row[3])
                 eval_recon_loss.append(row[4])
                 eval_tmp_loss.append(row[5])
-
 
     plot_curves(
         x=x,
@@ -209,7 +213,8 @@ def vis_loss(loss_file: str or pathlib.Path, save_dir: str) -> None:
         save_name=f"combined_loss",
     )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     loss_file = sys.argv[1]
     model_id = pathlib.Path(loss_file).stem
     save_dir = pathlib.Path("media") / model_id / "vis_loss"
@@ -218,5 +223,3 @@ if __name__ == '__main__':
     vis_loss(loss_file, save_dir)
 
     prGreen(f"\nSUCCESS | directory with plots: {save_dir}\n")
-
-
