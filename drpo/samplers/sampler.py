@@ -1,4 +1,3 @@
-from sre_constants import SUCCESS
 import h5py
 import numpy as np
 import pathlib
@@ -179,7 +178,9 @@ class Sampler(ABC):
         )
         playback_state = self.env.sim.get_state().flatten()
 
-        prYellow(f"WARNING| {demo_name}-{initial_global_timestep:05d} state diff: {np.linalg.norm(playback_state - demo_states[initial_global_timestep + 1])}")
+        prYellow(
+            f"WARNING| {demo_name}-{initial_global_timestep:05d} state diff: {np.linalg.norm(playback_state - demo_states[initial_global_timestep + 1])}"
+        )
 
         # create container by num of actions
         n = len(actions)

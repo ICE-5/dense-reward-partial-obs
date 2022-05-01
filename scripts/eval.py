@@ -13,11 +13,6 @@ from drpo.drpo import DRPO
 from drpo.dataloader.utils import *
 from drpo.utils import *
 
-# from process_rollouts import process_rollouts
-# from utils import *
-
-# from dense_reward_partial_obs import DenseRewardPartialObs
-
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -60,7 +55,7 @@ def eval_reward(model: DRPO, data_dir: Path, demo_name: str) -> list:
         )
         dense_reward = model.predict_reward(obs)
         dense_reward_arr.append(dense_reward)
-    return dense_reward_arr, original_reward_arr
+    return np.array(dense_reward_arr), np.array(original_reward_arr)
 
 
 if __name__ == "__main__":
@@ -79,7 +74,7 @@ if __name__ == "__main__":
 
     dense_reward_arr, original_reward_arr = eval_reward(
         model=model,
-        data_path=data_dir,
+        data_dir=data_dir,
         demo_name=demo_name,
     )
 
@@ -87,17 +82,17 @@ if __name__ == "__main__":
     save_dir.mkdir(parents=True, exist_ok=True)
 
     x = np.arange(len(dense_reward_arr))
-    ys = {}
-    ys["dense reward"] = dense_reward_arr
-    ys["original reward"] = original_reward_arr
+    ys = {"dense": dense_reward_arr, "engineered": original_reward_arr}
 
     plot_smooth_curves(
         x=x,
         ys=ys,
         save_dir=save_dir,
         save_name=f"{demo_name}",
+        smoothing_window=8,
+        title=demo_name,
         xlabel="Steps",
-        ylabel="Rewards"
+        ylabel="Rewards",
     )
 
     prGreen(f"\nSUCCESS | directory with plots: {save_dir}\n")

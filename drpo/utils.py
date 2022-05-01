@@ -50,8 +50,7 @@ def plot_smooth_curves(
     color_index = 0
 
     ax = plt.subplot()  # Defines ax variable by creating an empty plot
-    plt.ylim([0., 1.])
-
+    
     # Set the tick labels font
     for label in ax.get_xticklabels() + ax.get_yticklabels():
         label.set_fontname("Arial")
@@ -61,15 +60,13 @@ def plot_smooth_curves(
 
         y_smoothed = uniform_filter1d(y, size=smoothing_window) * scale
 
-        # NOTE: caution
-        # print(y_smoothed.shape)
+        # NOTE: comment off with caution
         # y_smoothed[-10:] = 1.0
+        # plt.ylim([0., 1.])
 
         # plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
         ax.xaxis.get_offset_text().set_fontsize(font_size)
 
-
-        # Running average for lines
 
         plt.plot(
             x,
@@ -82,14 +79,11 @@ def plot_smooth_curves(
         if ys_min:
             y_min = ys_min[label]
         
-        
-
-        y_min = ys_min[label]  if ys_min else 0
-        y_max = ys_max[label]  if ys_max else np.max([y_smoothed, y])
+        y_min = ys_min[label]  if ys_min else np.zeros(y_smoothed.size)
+        y_max = ys_max[label]  if ys_max else np.max([y_smoothed, y], axis=0)
 
         y_min_smoothed = uniform_filter1d(y_min, size=smoothing_window) * scale
         y_max_smoothed = uniform_filter1d(y_max, size=smoothing_window) * scale
-
 
 
         plt.fill_between(
